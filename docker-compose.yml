@@ -1,0 +1,405 @@
+version: '3'
+services:
+
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    ports:
+      - "${LOCAL_IP}:53:53/tcp"
+      - "${LOCAL_IP}:53:53/udp"
+      # - "${LOCAL_IP}:80:80/tcp"
+      - "${LOCAL_IP}:7443:443/tcp"
+      - "${LOCAL_IP}:7080:80/tcp"
+    cap_add:
+      - NET_ADMIN
+    environment:
+      ServerIP: ${LOCAL_IP}
+      WEBPASSWORD: ${PIHOLE_PASSWORD}
+      VIRTUAL_PORT: 80
+    volumes:
+      - ${USERDIR}/pihole:/etc/pihole
+      # make sure to manually create this log file before first run
+      - ${USERDIR}/pihole/log/pihole.log:/var/log/pihole.log
+      - /etc/dnsmasq.d:/etc/dnsmasq.d
+     # - ${USERDIR}/pihole/misc/dnsmasq.leases:/var/lib/misc/dnsmasq.leases
+    restart: always
+    dns: 
+      - 127.0.0.1
+      - 1.1.1.1
+
+  portainer:
+    container_name: portainer
+    restart: always  
+    image: portainer/portainer:latest
+    volumes:
+      - ${USERDIR}/portainer:/data
+      - ${USERDIR}/shared:/shared
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - "9000:9000"
+    environment:
+      - TZ=${TZ}
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=9000"
+      - "traefik.backend=portainer"
+      - "traefik.frontend.rule=Host:portainer.${DOMAINNAME}"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+
+  mqtt:
+    container_name: MQTT
+    restart: always
+    depends_on:
+      - "pihole"  
+    image: eclipse-mosquitto:latest
+    volumes:
+      - ${USERDIR}/mosquitto/config/:/mosquitto/config/
+      - ${USERDIR}/mosquitto/log:/mosquitto/log
+      - ${USERDIR}/mosquitto/data:/mosquitto/data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+    networks:
+      - traefik_proxy
+      - default
+    labels:
+      - "traefik.enable=false"
+
+  mongo:
+    container_name: mongo
+    restart: always
+    depends_on:
+      - "pihole"  
+    image: mongo:latest
+    volumes:
+      - ${USERDIR}/mongo:/data/db
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "27017:27017"
+
+  hadockermon:
+    container_name: ha-dockermon
+    restart: always
+    image: philhawthorne/ha-dockermon:latest
+    depends_on:
+      - "pihole"  
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${USERDIR}/ha-dockermon:/config
+    ports:
+      - "8126:8126"
+
+  influxdb:
+    container_name: influxdb
+    restart: always
+    image: influxdb:latest
+    depends_on:
+      - "pihole"  
+    volumes:
+      # any file cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
+      - ${USERDIR}/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
+      - ${USERDIR}/influxdb/db:/var/lib/influxdb
+    ports:
+      - "8086:8086"
+    networks:
+      - traefik_proxy
+      - default
+    labels:
+      - "traefik.enable=false"
+
+  grafana:
+    container_name: grafana
+    restart: always
+    image: grafana/grafana:latest
+    depends_on:
+      - "influxdb"
+      - "pihole"
+    ports:
+      - "3000:3000"
+    user: "472"
+    # to enable persistant storage, you might need to modify user permissions by creating this container in
+    # interactive mode and adjusting the permissions from a shell first
+    volumes:
+      - ${USERDIR}/grafana:/var/lib/grafana
+
+  chronograf:
+    container_name: chronograf
+    restart: always
+    image: chronograf:latest
+    depends_on:
+      - "influxdb"
+      - "pihole"
+    volumes:
+      - ${USERDIR}/chronograf:/var/lib/chronograf
+    ports:
+      - "8888:8888"
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}
+
+  homeassistant:
+    container_name: home-assistant
+    restart: always
+    image: homeassistant/home-assistant:latest
+    depends_on:
+      - "influxdb"
+      - "pihole"
+    volumes:
+      - ${USERDIR}/hass-config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - ${USERDIR}/hass_media:/media
+    #network_mode: host
+    privileged: true
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    networks:
+      - traefik_proxy
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=homeassistant"
+      - "traefik.frontend.rule=Host:ha.${DOMAINNAME}"
+      - "traefik.port=8123"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+
+  nodered1:
+    container_name: node-red-1
+    restart: always
+    image: nodered/node-red-docker:latest
+    depends_on:
+      - "homeassistant"
+      - "pihole"
+    user: root
+    volumes:
+      - ${USERDIR}/node-red-1/user:/data
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "1880:1880"
+  
+  mqttbridge:
+    image: stjohnjohnson/smartthings-mqtt-bridge:latest
+    volumes:
+      - ${USERDIR}/mqtt-bridge:/config
+    ports:
+      - 8080:8080
+    links:
+      - mqtt
+    networks:
+      - traefik_proxy
+      - default
+    labels:
+      - "traefik.enable=false"
+  
+  fail2ban:
+    image: crazymax/fail2ban:latest
+    network_mode: "host"
+    cap_add:
+    - NET_ADMIN
+    - NET_RAW
+    volumes:
+    - /var/log:/var/log:ro
+    - ${USERDIR}/fail2ban/data:/data
+
+  traefik:
+    hostname: traefik
+    image: traefik:latest
+    container_name: traefik
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # create these toml files first
+      - ${USERDIR}/traefik/traefik.toml:/etc/traefik/traefik.toml:ro
+      - ${USERDIR}/traefik/rules.toml:/etc/traefik/rules.toml:ro
+      - ${USERDIR}/traefik/acme:/etc/traefik/acme
+      - ${USERDIR}/shared:/shared
+      - ${USERDIR}/traefik/log:/var/log
+    ports:
+     - "80:80"
+     - "443:443"
+     - "8090:8080"
+    networks:
+      - default
+      - traefik_proxy
+    environment:
+      - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
+      - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
+    command:
+      - --web
+      - --accessLog.filePath=/var/log/access.log
+      - --accessLog.filters.statusCodes=400-499
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=traefik"
+      - "traefik.frontend.rule=Host:traefik.${DOMAINNAME}"  
+      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /traefik"
+      - "traefik.port=8080"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+
+  nextcloud:
+    container_name: nextcloud
+    restart: always
+    image: linuxserver/nextcloud:latest
+    volumes:
+      - ${USERDIR}/nextcloud/config:/config
+      #path to where nextcloud will store files
+      - ${USERDIR}/nextcloud/data:/data
+      - ${USERDIR}/shared:/shared
+    # ports:
+    #   - "9443:443"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+    networks:
+      - traefik_proxy
+    links:
+      - mariadb
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=nextcloud"
+      - "traefik.frontend.rule=Host:nextcloud.${DOMAINNAME}"
+      - "traefik.port=443"
+      - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+  
+  mariadb:
+    image: mariadb:latest
+    container_name: "mariadb"
+    hostname: mariadb
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: always
+    volumes:
+      - ${USERDIR}/mariadb/config:/config
+      - ${USERDIR}/mariadb/mysql:/var/lib/mysql
+    ports:
+      - "3306:3306/tcp"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    labels:
+      - traefik.enable=false
+  
+  phpmyadmin:
+    hostname: phpmyadmin
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    links:
+      - mariadb:db
+    ports:
+      - 9999:80
+    environment:
+      - PMA_HOST=mariadb
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    labels:
+      - traefik.enable=false
+
+  watchtower:
+    container_name: watchtower
+    hostname: watchtower
+    restart: always
+    image: v2tec/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --schedule "0 0 4 * * *" --cleanup
+
+  organizr:
+    container_name: organizr
+    restart: always
+    image: lsiocommunity/organizr:latest
+    volumes:
+      - ${USERDIR}/organizr:/config
+      - ${USERDIR}/shared:/shared
+    #ports:
+    #  - "XXXX:80"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=organizr"
+      - "traefik.frontend.rule=Host:organizr.${DOMAINNAME}"  
+      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /organizr"
+      - "traefik.port=80"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      #- "traefik.frontend.headers.frameDeny=true"
+
+  duplicati:
+    image: duplicati/duplicati
+    container_name: duplicati
+    restart: unless-stopped
+    network_mode: "bridge"
+    ports:
+        - '8200:8200'
+    environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+    volumes:
+        - '${USERDIR}/duplicati:/config'
+        - '${USERDIR}/backupOnDesktop:/backups'
+        - '${USERDIR}:/source'
+        - '/etc/localtime:/etc/localtime:ro'
+
+networks:
+  traefik_proxy:
+    external:
+      name: traefik_proxy
+  default:
+    driver: bridge
