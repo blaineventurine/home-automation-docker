@@ -1,0 +1,211 @@
+resources:
+  - url: /local/surveillance-card.js?v=0
+    type: module
+  - url: /local/custom-lovelace/weather-card/weather-card.js?v=0
+    type: module
+
+views:
+  - title: main
+    theme: night
+    icon: mdi:home-outline
+    cards:
+    - type: glance
+      title: Lights
+      show_state: false
+      entities:
+        - entity: light.office
+          name: Office
+          icon: mdi:lamp
+          tap_action:
+            action: toggle
+        - entity: switch.diningroomlamp
+          name: Dining Room
+          icon: mdi:lamp
+          tap_action:
+            action: toggle
+        - entity: light.living_room
+          name: Living Room
+          icon: mdi:lamp
+          tap_action:
+            action: toggle
+        - entity: light.kitchen
+          name: Kitchen
+          icon: mdi:lamp
+          tap_action:
+            action: toggle
+        - entity: light.bedroom
+          name: Bedroom
+          icon: mdi:lamp
+          tap_action:
+            action: toggle
+        - entity: light.porch_light
+          name: Front Porch
+          icon: mdi:lamp
+          tap_action:
+            action: toggle
+    - type: media-control
+      entity: media_player.living_room
+    - type: glance
+      title: Doors
+      show_state: false
+      entities:
+        - entity: binary_sensor.front_door_contact
+          name: Front Door
+          icon: mdi:door
+        - entity: binary_sensor.kitchen_door_contact
+          name: Kitchen Door
+          icon: mdi:door
+    - type: map
+      default_zoom: 16
+      entities:
+        - entity: !secret device_tracker_entity
+        - zone.home
+    - type: custom:weather-card
+      entity: weather.dark_sky
+      name: Weather
+      icons: "/local/custom-lovelace/weather-card/icons/"
+
+
+  - title: temperature
+    icon: mdi:thermometer-lines
+    cards:
+    - type: thermostat
+      entity: climate.dining_room_nest
+    - type: sensor
+      entity: sensor.pi_one_temperature
+      name: Bedroom Temperature
+      graph: line
+    - type: sensor
+      entity: sensor.dark_sky_temperature
+      name: Outside Temperature
+      graph: line
+    - type: sensor
+      entity: sensor.front_door_temperature
+      name: Front Door Temperature
+      graph: line
+    - type: sensor
+      entity: sensor.kitchen_door_temperature
+      name: Kitchen Door Temperature
+      graph: line
+    - type: sensor
+      entity: sensor.office_motion_sensor_temperature
+      name: Office Temperature
+      graph: line
+
+  - title: lights
+    icon: mdi:desk-lamp
+    cards:
+    - type: glance
+      show_state: false
+      title: Bedroom
+      entities:
+        - entity: light.blaines_nightstand
+          name: Blaine's Nightstand
+          icon: mdi:desk-lamp
+          tap_action:
+            action: toggle
+        - entity: light.beccas_nightstand
+          name: Becca's Nightstand
+          icon: mdi:desk-lamp
+          tap_action:
+            action: toggle
+    - type: glance
+      show_state: false
+      title: Kitchen
+      entities:
+        - entity: light.kitchen_sink
+          name: Sink
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+        - entity: light.kitchen_light_1
+          name: Overhead 1
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+        - entity: light.kitchen_light_2
+          name: Overhead 2
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+        - entity: light.kitchen_light_3
+          name: Overhead 3
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+        - entity: light.kitchen_light_4
+          name: Overhead 4
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+    - type: glance
+      show_state: false
+      title: Dining Room
+      entities:
+        - entity: switch.diningroomlamp
+          name: Dining Room Floor Lamp
+          icon: mdi:desk-lamp
+          tap_action:
+            action: toggle
+    - type: glance
+      show_state: false
+      title: Living Room
+      entities:
+        - entity: switch.windowlight
+          name: Window Light
+          icon: mdi:desk-lamp
+          tap_action:
+            action: toggle
+        - entity: light.tv_light
+          name: TV Lamp
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+        - entity: light.couch_light
+          name: Couch Lamp
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+    - type: glance
+      show_state: false
+      title: Office
+      entities:
+        - entity: light.office_1
+          name: Overhead 1
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+        - entity: light.office_2
+          name: Overhead 2
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+    - type: glance
+      show_state: false
+      title: Outside
+      entities:
+        - entity: light.porch_light
+          name: Front Porch
+          icon: mdi:lightbulb
+          tap_action:
+            action: toggle
+
+  - title: Cameras
+    icon: mdi:cctv
+    panel: true
+    cards:
+      - type: custom:surveillance-card
+        thumb_interval: 10
+        update_interval: 2
+        cameras:
+            - entity: camera.livingroomcamerafront
+            - entity: camera.livingroomcameraside
+  
+  - title: Media
+    icon: mdi:music-note
+    cards:
+    - type: media-control
+      entity: media_player.living_room
+    - type: media-control
+      entity: media_player.spotify
+

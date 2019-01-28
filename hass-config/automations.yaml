@@ -1,0 +1,33 @@
+- alias: 'Set theme at startup'
+  trigger:
+    platform: homeassistant
+    event: start
+  action:
+    service: frontend.set_theme
+    data:
+      name: Dark - Green
+
+- alias: 'Turn on front lights at sundown'
+  trigger:
+    platform: sun
+    event: sunset
+    offset: "-00:30:00"
+  action:
+    - service: light.turn_on
+      data:
+        entity_id: 
+          - light.couch_light
+          - light.porch_light
+    # - service: switch.turn_on
+    #   data:
+    #     entity_id: switch.diningroomlamp
+
+- alias: 'Turn off porch light at sunrise'
+  trigger:
+    platform: sun
+    event: sunrise
+    offset: 00:20:00
+  action:
+  - service: light.turn_off
+    data:
+      entity_id: light.porch_light

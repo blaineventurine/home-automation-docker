@@ -1,0 +1,253 @@
+homeassistant:
+  # Name of the location where Home Assistant is running
+  name: Home
+  # Location required to calculate the time the sun rises and sets
+  latitude: !secret latitude
+  longitude: !secret longitude
+  # Impacts weather/sunrise data (altitude above sea level in meters)
+  elevation: 0
+  # metric for Metric, imperial for Imperial
+  unit_system: imperial
+  # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+  time_zone: America/Chicago
+  # Customization file
+  customize: !include customize.yaml
+
+# Show links to resources in log and frontend
+introduction:
+
+# Enables the frontend
+frontend:
+  themes: !include themes.yaml
+
+# Enables configuration UI
+config:
+
+# Uncomment this if you are using SSL/TLS, running in Docker container, etc.
+ http:
+  base_url: !secret base_url
+  trusted_networks:
+    - 127.0.0.1
+    - !secret trusted_network_1
+#  ssl_certificate: "/ssl/fullchain.pem"
+#  ssl_key: "/ssl/privkey.pem"
+
+# Discover some devices automatically
+discovery:
+
+# Allows you to issue voice commands from the frontend in enabled browsers
+conversation:
+
+# Enables support for tracking state changes over time
+history:
+
+# View all events in a logbook
+logbook:
+
+# Enables a map showing the location of tracked devices
+map:
+
+# Track the sun
+sun:
+
+# Text to speech
+tts:
+  - platform: google
+
+# Cloud
+cloud:
+
+mqtt:
+  broker: !secret local_ip
+  port: 1883
+  username: !secret mqtt_username
+  password: !secret mqtt_password
+  discovery: true
+  discovery_prefix: home_assistant
+
+sensor:
+  - platform: moon
+
+  - platform: haveibeenpwned
+    email: 
+      - !secret pwned_email_1
+      - !secret pwned_email_2
+
+  - platform: darksky
+    api_key: !secret darksky_api_key
+  #   forecast:
+  #     - 1
+  #     - 2
+  #     - 3
+  #     - 4
+  #     - 5
+    monitored_conditions:
+  #     - icon
+  #     - summary
+  #     - humidity
+      - temperature
+  #     - apparent_temperature
+  #     - precip_probability
+  #     - pressure
+    update_interval:
+      minutes: 5
+
+  - platform: mqtt
+    name: "Pi-One Temperature"
+    state_topic: "pi-one/temperature"
+    unit_of_measurement: '°F'
+    #value_template: "{{ value_json.temperature }}"
+  
+  - platform: mqtt
+    name: "Pi-One Humidity"
+    state_topic: "pi-one/humidity"
+    unit_of_measurement: '%'
+    #value_template: "{{ value_json.humidity }}"
+  
+  - platform: mqtt
+    name: "Front Door Temperature"
+    state_topic: "smartthings/Front Door Sensor/temperature"
+    unit_of_measurement: '°F'
+    retain: true
+  - platform: mqtt
+    name: "Front Door Contact Battery"
+    state_topic: "smartthings/Front DoorSensor/battery"
+    unit_of_measurement: '%'
+    retain: true
+  - platform: mqtt
+    name: "Kitchen Door Temperature"
+    state_topic: "smartthings/Kitchen Door Sensor/temperature"
+    unit_of_measurement: '°F'
+    retain: true
+  - platform: mqtt
+    name: "Kitchen Door Contact Battery"
+    state_topic: "smartthings/Kitchen Door Sensor/battery"
+    unit_of_measurement: '%'
+    retain: true
+  
+  - platform: mqtt
+    name: "Tablet Light Sensor"
+    state_topic: "wallpanel/sensor/light"
+    unit_of_measurement: "lx"
+    retain: true
+    value_template: "{{ value_json.value }}"
+  
+  - platform: mqtt
+    name: "Office Motion Sensor Temperature"
+    state_topic: "smartthings/Motion Sensor/temperature"
+    unit_of_measurement: '°F'
+    retain: true
+
+binary_sensor:
+  - platform: mqtt
+    name: "Kitchen Door Contact"
+    state_topic: "smartthings/Kitchen Door Sensor/contact"
+    retain: true
+    payload_on: "open"
+    payload_off: "closed"
+    device_class: opening
+  - platform: mqtt
+    name: "Front Door Contact"
+    state_topic: "smartthings/Front Door Sensor/contact"
+    retain: true
+    payload_on: "open"
+    payload_off: "closed"
+    device_class: opening
+  - platform: mqtt
+    name: "Office Motion Sensor"
+    state_topic: "smartthings/Motion Sensor/motion"
+    retain: true
+    payload_on: "active"
+    payload_off: "inactive"
+    
+
+nest:
+  client_id: !secret nest_client_id
+  client_secret: !secret nest_client_secret
+
+weather:
+  - platform: darksky
+    api_key: !secret darksky_api_key
+    mode: daily
+
+hue:
+  bridges:
+    - host: !secret hue_bridge_ip
+      allow_unreachable: true
+      allow_hue_groups: true
+
+switch:
+  - platform: tplink
+    host: !secret window_light_switch_ip
+    name: windowLight
+  - platform: tplink
+    host: !secret dining_room_switch_ip
+    name: diningRoomLamp
+  - platform: mqtt
+    name: KitchenTableOutlet
+    state_topic: "smartthings/Kitchen Table Outlet/switch"
+    command_topic: "smartthings/Kitchen Table Outlet/switch"
+    payload_on: "on"
+    payload_off: "off"
+    retain: true
+  - platform: mqtt
+    name: OfficeOutlet
+    state_topic: "smartthings/Office Outlet/switch"
+    command_topic: "smartthings/Office Outlet/switch"
+    payload_on: "on"
+    payload_off: "off"
+    retain: true
+  - platform: mqtt
+    name: StoveOutlet
+    state_topic: "smartthings/Stove Outlet/switch"
+    command_topic: "smartthings/Stove Outlet/switch"
+    payload_on: "on"
+    payload_off: "off"
+    retain: true
+
+camera:
+  - platform: yi
+    name: LivingRoomCamera-front
+    host: !secret living_room_camera_front_ip
+    password: !secret camera_password
+    ffmpeg_arguments: -s 800x450
+
+  - platform: yi
+    name: LivingRoomCamera-side
+    host: !secret living_room_camera_side_ip
+    password: !secret camera_password
+    ffmpeg_arguments: -s 800x450
+
+# device_tracker:
+#   - platform: google_maps
+#     username: !secret google_tracker_username
+#     password: !secret google_tracker_password
+
+device_tracker:
+  - platform: owntracks
+    max_gps_accuracy: 200
+    mqtt_topic: !secret owntracks_mqtt_topic
+
+influxdb:
+  host: !secret local_ip
+  port: 8086
+  database: !secret influx_db_database
+  username: !secret influx_db_username
+  password: !secret influx_db_password
+  max_retries: 3
+  default_measurement: state
+
+media_player:
+  - platform: spotify
+    client_id: !secret spotify_client_id
+    client_secret: !secret spotify_client_secret
+  
+roku:
+  - host: !secret roku_ip
+
+lovelace:
+  mode: yaml
+    
+group: !include groups.yaml
+automation: !include automations.yaml
+script: !include scripts.yaml
