@@ -12,6 +12,8 @@ services:
       - "${LOCAL_IP}:7080:80/tcp"
     cap_add:
       - NET_ADMIN
+    depends_on:
+      - traefik
     environment:
       ServerIP: ${LOCAL_IP}
       WEBPASSWORD: ${PIHOLE_PASSWORD}
@@ -155,6 +157,7 @@ services:
     depends_on:
       - "influxdb"
       - "pihole"
+      - "traefik"
     volumes:
       - ${USERDIR}/hass-config:/config
       - /etc/localtime:/etc/localtime:ro
@@ -219,7 +222,7 @@ services:
     - NET_ADMIN
     - NET_RAW
     volumes:
-    - /var/log:/var/log:ro
+    - ${USERDIR}/traefik/log:/var/log:ro
     - ${USERDIR}/fail2ban/data:/data
 
   traefik:
@@ -238,7 +241,7 @@ services:
     ports:
      - "80:80"
      - "443:443"
-     - "8090:8080"
+     #- "8090:8080"
     networks:
       - default
       - traefik_proxy
@@ -252,7 +255,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.backend=traefik"
-      - "traefik.frontend.rule=Host:traefik.${DOMAINNAME}"  
+      - "traefik.frontend.rule=Host:traefik.${DOMAINNAME}" 
+      - "traefik.frontend.auth.basic: ${HTTP_USERNAME}:${HTTP_PASSWORD}" 
       #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /traefik"
       - "traefik.port=8080"
       - "traefik.docker.network=traefik_proxy"
