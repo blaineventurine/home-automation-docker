@@ -1,5 +1,6 @@
 *
 
+!.gitignore
 !*.yaml
 !*.yml
 !.gitignore
@@ -13,6 +14,9 @@
 !/fail2ban/data/
 !/fail2ban/data/filter.d
 !/fail2ban/data/jail.d
+
+!/.github-files
+!/.github-files/*
 
 
 known_devices.yaml
