@@ -4,8 +4,13 @@
 !*.yml
 !.gitignore
 !*.md
+!*.conf
 
 !/hass-config/
+!/hass-config/www/
+
+!/fail2ban/data/filter.d
+!/fail2ban/data/jail.d
 
 
 known_devices.yaml

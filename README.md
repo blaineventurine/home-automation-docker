@@ -21,7 +21,7 @@ Currently, I'm running:
 * MQTTBridge (to make Samsung SmartThings post to MQTT topics)
 * Fail2Ban
 * Nextcloud
-* MaraiDB
+* MariaDB
 * PHPMyAdmin
 * Watchtower
 * Duplicati (easiest backup solution I've found)
@@ -437,10 +437,28 @@ Portainer a great web GUI to monitor and manage your Docker setup. You can start
         - "traefik.frontend.headers.STSPreload=true"
         - "traefik.frontend.headers.frameDeny=true"
 
+## InfluxDB
+
+## Grafana
+
+## MariaDB
+
+## MongoDB
+
+## Nextcloud
+
 ## Mosquitto
 
 ## HomeAssistant
 
+## Node-RED
+
 ## PiHole
+
+## Duplicati
+
+## Organizr
+
+## Samba
 
 
