@@ -9,6 +9,7 @@
 
 !/hass-config/
 !/hass-config/www/
+!/hass-config/www/**
 
 !/fail2ban/
 !/fail2ban/data/
