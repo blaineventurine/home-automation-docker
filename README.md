@@ -134,7 +134,7 @@ where `username` is whatever you want your login name to be. It'll prompt you fo
 ## Configure Cloudflare
 
 I don't have a need for dynamic DNS, so this guide won't cover it, but it is relatively easy to set up with Cloudflare
-![Setup Cloudflare to redirect to the external IP of your server](./cloudflare.png " X")
+![Setup Cloudflare to redirect to the external IP of your server](./.github-files/cloudflare.png " X")
 
 You'll need your Global API key, so grab that and save it in your `.env` file.
 
@@ -195,7 +195,7 @@ Next,
           - ${USERDIR}/shared:/shared
           - ${USERDIR}/traefik/log:/var/log
 
-tells Docker where the persistent data for the container will live. The best thing about Docker is that you can easily switch between versions of something by simply using a different image. If you're on version 1.1 of something, and 1.6 comes out, just pull the new image and throw away the old container. Your settings won't go anywhere. It helps to think of each container as a tiny little virtual machine, running only what it needs. We can map folders from there to the host machine, allowing us to persist configuration files and things like that. Everything that isn't mapped will disappear when the container is removed.  
+tells Docker where the persistent data for the container will live. The best thing about Docker is that you can easily switch between versions of something by simply using a different image. If you're on version 1.1 of something, and 1.2 comes out, just pull the new image and throw away the old container. Your settings won't go anywhere. It helps to think of each container as a tiny little virtual machine, running only what it needs. We can map folders from there to the host machine, allowing us to persist configuration files and things like that. Everything that isn't mapped will disappear when the container is removed.  
 
 The line `- /var/run/docker.sock:/var/run/docker.sock:ro` gives the container access to the host machine's UNIX socket, in read-only mode. Essentially this allows the container to exchange data between other processes on the host. Not needed for every container.
 
