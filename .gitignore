@@ -9,6 +9,8 @@
 !/hass-config/
 !/hass-config/www/
 
+!/fail2ban/
+!/fail2ban/data/
 !/fail2ban/data/filter.d
 !/fail2ban/data/jail.d
 
