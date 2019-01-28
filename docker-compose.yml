@@ -276,6 +276,7 @@ services:
       - PGID=${PGID}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     networks:
       - traefik_proxy
     links:

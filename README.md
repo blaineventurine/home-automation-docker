@@ -6,27 +6,26 @@ These are all the containers I have running at home. Everything is run behind a 
 
 Currently, I'm running:
 
-* Traefik
-* Home Assistant
-* PiHole
-* Organizr
-* Portainer
-* Mosquitto (an MQTT broker)
-* MongoDB
-* Home Assistant Docker Monitor
-* InfluxDB
-* Grafana
-* Chronograf
-* Node-RED
-* MQTTBridge (to make Samsung SmartThings post to MQTT topics)
-* Fail2Ban
-* Nextcloud
-* MariaDB
-* PHPMyAdmin
-* Watchtower
-* Duplicati (easiest backup solution I've found)
+* [Traefik](#traefik)
+* [Home Assistant](#home-assistant)
+* [PiHole](#pihole)
+* [Organizr](#organizr)
+* [Portainer](#portainer)
+* [Mosquitto](#mosquitto)
+* [MongoDB](#mongodb)
+* [InfluxDB](#influxdb)
+* [Grafana](#grafana)
+* [Chronograf](#chronograf)
+* [Node-RED](#node-red)
+* [MQTTBridge](#mqtt-bridge) (to make Samsung SmartThings post to MQTT topics)
+* [Fail2Ban](#fail2ban)
+* [Nextcloud](#nextlcoud)
+* [MariaDB](#mariadb)
+* [PHPMyAdmin](#phpmyadmin)
+* [Watchtower](#watchtower)
+* [Duplicati](#duplicati) (easiest backup solution I've found)
 
-as containers, and my server has a Samba share set up to eventually allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for Duplicati backups.
+as containers, and my server has a [Samba](#samba) share set up to eventually allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for Duplicati backups.
 
 As far as devices, I'm using:
 
@@ -50,8 +49,6 @@ As far as devices, I'm using:
 The SmartThings hub only seems to work when the phase of the moon is just right, and if I had to do it over, I would go with a different platform.
 
 I'm in the process of adding a Pi running OctoPrint (for controlling my 3D printer), a few ESP8266's that will post sensor data to an MQTT topic, some repurposed Amazon dash buttons, and a ton of NFC tags I'm trying to find uses for.
-
-
 
 ## Docker Setup
 
@@ -373,9 +370,19 @@ The `acme.json` file is where your private keys will live.
 
  Go ahead and forward ports `80` and `443` on your router to the IP address of the host machine. In a console,in the same directory as the `docker-compose.yml` file, type `docker-compose up -d`. Docker will pull down the image, create the container, and start it up. You should be able to access the web interface from `traefik.your-domain.com`. If everything is working, `docker-compose down` will bring it to a stop. The `-d` flag is optional - it runs containers in 'detached' mode, where they run in the background. I like having a terminal window open for now, to view events as they happen, so I generally start containers without it.
 
+ As you add these services to the `docker-compose` file, call `docker-compose up`, make sure everything starts up with no errors, and then spin it down.
+
 ## Fail2Ban
 
-Now that we have a container up and running, a little more security is needed. Fail2Ban will block IP addresses associated with too many failed login attempts - or any IP that makes a request that generates a response in the 400-409 range. So even if someone is randomly querying things, hoping to find something exposed, after a pre-determined amount of 404s, they are banned.
+Now that we have a container up and running, a little more security is needed. Fail2Ban will block IP addresses associated with too many failed login attempts. The ban is 10 minutes by default. Fail2Ban checks the Traefik log file for things matching a regex pattern, and applies a ban to the corresponding IP. Fail2Ban operates on three concepts:
+
+* Filters
+* Actions
+* Jails
+
+*Filters* are regex patterns that define what to look for in a log file  
+*Actions* are what we want done when we find a match
+*Jails* are what ties together a log, filter, and action
 
 Start by adding this to `docker-compose.yml`
 
@@ -395,14 +402,31 @@ We don't need this to be accessible from the internet, so it's a pretty simple c
     enabled = true
     logpath = /var/log/access.log
     port = http,https
+    filter = traefik-auth
+    maxretry = 5
+    bantime = 1200
+    findtime = 600
 
-that goes in it. Next, we need to tell Fail2Ban what to look for. Create another file, `${USERDIR}/fail2ban/data/filter.d/traefik-auth.conf` and put this
+that goes in it.  
+
+`logpath` - what the container thinks your Traefik log path is from `- ${USERDIR}/traefik/log:/var/log:ro`.  
+`maxretry`- how many attempts before a ban results  
+`bantime` - how long in seconds the ban will last  
+`findtime` - the window of time retries must occur in, also in seconds. In this case 5 failed attempts within 600 seconds results in a ban for 1200 seconds.  
+
+Jails can be created in the root Fail2Ban folder all within one `jail.local` file, or under `jail.d` in individual `.conf` files. I use the second approach here. You can whitelist IPs from a jail by adding `ignoreip = ` followed by a space-separated list of IP addresses. Useful if you keep locking yourself out while testing.
+
+If you want to override default Fail2Ban options, create a file called `fail2ban.local` in the root Fail2Ban folder. I don't find that necessary.
+
+Next, we need to tell Fail2Ban what to look for. Create another file, `${USERDIR}/fail2ban/data/filter.d/traefik-auth.conf` and put this
 
     [Definition]
-    failregex = ^<HOST> \- \S+ \[\] \"(GET|POST|HEAD) .+\" 401 .+$
+    failregex = ^<HOST> \- \S+ \[\] \"[A-Z]+ .+\" 4(01|03|07|22|23|29) .+$
     ignoreregex =
 
-in it. Make sure neither of those files are indented - Fail2Ban will complain.
+in it. This will look out for a variety of statuses in the 400-429 range, and ban them if they meet the criteria. Make sure neither of those files are indented - Fail2Ban will complain.  
+
+We don't need to worry about adding any actions right now, so I won't cover them. Fail2Ban can also be configured to email you when bans happen, but I don't really find it necessary to turn that on.
 
 ## Portainer
 
@@ -437,7 +461,9 @@ Portainer a great web GUI to monitor and manage your Docker setup. You can start
         - "traefik.frontend.headers.STSPreload=true"
         - "traefik.frontend.headers.frameDeny=true"
 
-Most of this should look a little familiar - we're creating the container with the latest image, exposing the socket so it can see all the other containers, giving it a port, setting the timezone, and finally creating a route for Traefik. 
+Most of this should look a little familiar - we're creating the container with the latest image, exposing the socket so it can see all the other containers, giving it a port, setting the timezone, and finally creating a route for Traefik.
+
+Once Portainer is up, it's helpful to go through your existing containers and check the log files. Every time I add something new to my stack, there's a process of checking logs until I know the configuration is right.
 
 ## Watchtower
 
@@ -498,6 +524,8 @@ The `user`
 
 ## Chronograf
 
+Chronograf is an interface for InfluxDB. It does have some data visualization options, but I prefer Grafana for that. Later on we'll use Chronograf to create a user and database for Home Assistant. Setup is pretty straightforward.
+
     chronograf:
       container_name: chronograf
       restart: always
@@ -514,7 +542,7 @@ The `user`
 
 ## MariaDB
 
-MariaDB is a drop-in replacement for MySQL. I use it for NextCloud, rather than the default SQLite.
+MariaDB is a drop-in replacement for MySQL. I use it for NextCloud, rather than the default SQLite. We'll need to finish setting this up once we have PHPMyAdmin installed.
 
     mariadb:
       image: mariadb:latest
@@ -538,9 +566,11 @@ MariaDB is a drop-in replacement for MySQL. I use it for NextCloud, rather than 
       labels:
         - traefik.enable=false
 
+Back in the `.env` file, fill out the MYSQL-related variables. I named my database `nextcloud`, set two different password for the root and user, and gave it a username.
+
 ## PHPMyAdmin
 
-PHPMyAdmin is essentially a GUI for interacting with MySQL and MariaDB databases.
+PHPMyAdmin is essentially a GUI for interacting with MySQL and MariaDB databases. Once it's up and running, you'll need to login and create a new database, named whatever you called it in the `.env` file.
 
     phpmyadmin:
     hostname: phpmyadmin
@@ -559,6 +589,8 @@ PHPMyAdmin is essentially a GUI for interacting with MySQL and MariaDB databases
 
 ## MongoDB
 
+Mongo is another database, a NoSQL document store. It's very flexible - you're not locked into a schema. I'm phasing it out of my system though, as between InfluxDB and MariaDB, all of my use cases are covered. Consider this part optional, if you want to play with it. 
+
     mongo:
     container_name: mongo
     restart: always
@@ -571,7 +603,7 @@ PHPMyAdmin is essentially a GUI for interacting with MySQL and MariaDB databases
 
 ## Nextcloud
 
-Self-hosted file storage, calendar, collaboration tools, and a lot more. Think Google Drive, except the data belongs to you.
+Self-hosted file storage, calendar, collaboration tools, and a lot more. Think Google Drive, except the data belongs to you. There native apps for all major platforms to use for syncing. You can create users, groups, assign permissions, collaborate, extend it in multiple ways - it's a very useful piece of software.
 
     nextcloud:
     container_name: nextcloud
@@ -589,6 +621,7 @@ Self-hosted file storage, calendar, collaboration tools, and a lot more. Think G
       - PGID=${PGID}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
       - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
     networks:
       - traefik_proxy
     links:
@@ -612,7 +645,11 @@ Self-hosted file storage, calendar, collaboration tools, and a lot more. Think G
 
 ## Mosquitto
 
-Mosquitto is an MQTT broker. 
+Mosquitto is an MQTT broker. MQTT is a protocal that allows devices to subscribe to topics, and publish or read messages on them. Think of the broker as a simple API. A device subscribes to it by logging in, and then it is allowed to read or write to any path you set up.  
+
+For example, various sensors I have around the house use it to communicate with Home Assistant. I have a Raspberry Pi with a temperature/humidity sensor set up in my bedroom. Once a minute, it will send a message to `mqtt:1883/pi-one/temperature` and then another one to `mqtt:1883/pi-one/humidity` - and the messages can be anything. The battery sensor for a tablet I have posts `{"value":100,"unit":"%","charging":true,"acPlugged":true,"usbPlugged":false}` to the `tablet/battery` topic. Home Assistant can take that data, parse it, and write it to InfluxDB. Depending on what data you're collecting, this can be useful for triggering automations, i.e., "if the value of X is true, do Y, else do Z."
+
+[MQTT.fx](https://mqttfx.jensd.de/index.php/download) is very useful tool to use when diagnosing MQTT issues - you can subscribe to any topic, even `#` for all (or `topic-name/#' for all subtopics of topic-name) of them and see what is published where.
 
     mqtt:
       container_name: MQTT
@@ -632,9 +669,11 @@ Mosquitto is an MQTT broker.
       labels:
         - "traefik.enable=false"
 
+I have not yet configured this to be accesible via Traefik, I'm still tweaking that setup. I use OwnTracks to base some automations on where I am, and it posts messages to CloudMQTT, which communicates with Mosquitto. Before I had the reverse proxy setup, none of my home services were available outside my home network, so I needed a middleman for certain things like that. Now that Traefik is running, I don't see a reason to keep using CloudMQTT. I'll update this once I get it setup properly.
+
 ## Home Assistant
 
-Home Assistant is a pretty incredible project that allows you to automate your home.
+Home Assistant is a pretty incredible project that allows you to automate your home. It has integrations for every platform I can think of in the home automation space. I am still very much a beginner with it, but in the `hass-config` folder of this repository, I'll be posting my configuration files and some simple walkthroughs to get you up and running with it.
 
     homeassistant:
     container_name: home-assistant
@@ -674,6 +713,8 @@ Home Assistant is a pretty incredible project that allows you to automate your h
 
 ## Node-RED
 
+Node-RED allows you to setup complicated configurations of devices. It integrates nicely with MQTT. People have done some pretty amazing stuff with it, and it can get pretty complex. It's another thing I'm still playing around with, so consider this optional, nothing in my current setup depends on it.
+
     nodered:
       container_name: node-red
       restart: always
@@ -689,7 +730,9 @@ Home Assistant is a pretty incredible project that allows you to automate your h
 
 ## PiHole
 
-PiHole is a network-wide ad-blocker. I've got close to a million domains on my blocklist. I've almost forgotten what the internet is like with ads. PiHole requires a little extra configuration - it doesn't always play nice with Docker, and you'll need to adjust some settings on your router.
+PiHole is a network-wide ad-blocker. I've got close to a million domains on my blocklist. I've almost forgotten what the internet is like with ads. My phone is configured with [Tasker](https://tasker.joaoapps.com/) to automatically connect to a VPN when I leave my home WiFi network, so the ad-blocking persists on my phone even when I'm away.
+
+ PiHole requires a little extra configuration - it doesn't always play nice with Docker, and you'll need to adjust some settings on your router. You need to set your DNS server IP to the IP address of the machine hosting PiHole. PiHole can also function as a DHCP server for you local network, though I'm looking into using [phpIPAM](https://phpipam.net/) for that, so my router is handling it for now.
 
     pihole:
       image: pihole/pihole:latest
@@ -719,6 +762,8 @@ PiHole is a network-wide ad-blocker. I've got close to a million domains on my b
         - 127.0.0.1
         - 1.1.1.1
 
+When you get it up and running, [this](https://discourse.pi-hole.net/t/update-the-best-blocking-lists-for-the-pi-hole-dns-ad-blockers-interesting-combination/13620) is a good place to start looking for information on blocklists.
+
 ## Duplicati
 
 Duplicati is a very easy to use file backup system. Since I've got a few Samba shares scattered throughout my home network, I keep backups of my essential stuff on all of them.
@@ -739,13 +784,72 @@ Duplicati is a very easy to use file backup system. Since I've got a few Samba s
         - '${USERDIR}:/source'
         - '/etc/localtime:/etc/localtime:ro'
 
+The `backupOnDesktop` folder is not on my server, but on my desktop. I'll cover that in the [Samba](#samba) section below.
+
 ## Organizr
 
 Organizr is a dashboard for media containers.
 
+    organizr:
+      container_name: organizr
+      restart: always
+      image: lsiocommunity/organizr:latest
+      volumes:
+        - ${USERDIR}/organizr:/config
+        - ${USERDIR}/shared:/shared
+      #ports:
+      #  - "XXXX:80"
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      networks:
+        - traefik_proxy
+      labels:
+        - "traefik.enable=true"
+        - "traefik.backend=organizr"
+        - "traefik.frontend.rule=Host:organizr.${DOMAINNAME}"  
+        #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /organizr"
+        - "traefik.port=80"
+        - "traefik.docker.network=traefik_proxy"
+        - "traefik.frontend.headers.SSLRedirect=true"
+        - "traefik.frontend.headers.STSSeconds=315360000"
+        - "traefik.frontend.headers.browserXSSFilter=true"
+        - "traefik.frontend.headers.contentTypeNosniff=true"
+        - "traefik.frontend.headers.forceSTSHeader=true"
+        - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+        - "traefik.frontend.headers.STSIncludeSubdomains=true"
+        - "traefik.frontend.headers.STSPreload=true"
+        #- "traefik.frontend.headers.frameDeny=true"
+
 ## Samba
 
 Samba is a network file-sharing system.
+
+## Samsung SmartThings Integration
+
+SmartThings was a pain to setup. Samsung created a very half-assed walled garden with this one. There are a few things we need to set up in order to get SmartThings devices talking to MQTT:
+
+* [MQTTBridge](#mqtt-bridge)
+* Samsung SmartThings **Classic** app on your phone - the new one will not work
+* A [SmartThings IDE](https://graph.api.smartthings.com/) account
+* A lot of patience
+
+### MQTT Bridge
+
+    mqttbridge:
+      image: stjohnjohnson/smartthings-mqtt-bridge:latest
+      volumes:
+        - ${USERDIR}/mqtt-bridge:/config
+      ports:
+        - 8080:8080
+      links:
+        - mqtt
+      networks:
+        - traefik_proxy
+        - default
+      labels:
+        - "traefik.enable=false"
 
 ## Next Steps
 
