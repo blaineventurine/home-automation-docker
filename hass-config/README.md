@@ -1,0 +1,3 @@
+# Home Assistant
+
+This is a constantly evolving work-in-progress. Home Assistant is a pretty amazing platform, and the amount of devices it supports is huge. My assorted config files are in here. I'll try to give a detailed breakdown of them - none of them are very complicated (yet), as I am slowly expanding the amount of devices connected to HA, and trying to think of ways to use them in automations.
