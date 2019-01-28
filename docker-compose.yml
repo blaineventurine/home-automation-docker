@@ -61,8 +61,6 @@ services:
   mqtt:
     container_name: MQTT
     restart: always
-    depends_on:
-      - "pihole"  
     image: eclipse-mosquitto:latest
     volumes:
       - ${USERDIR}/mosquitto/config/:/mosquitto/config/
@@ -81,8 +79,6 @@ services:
   mongo:
     container_name: mongo
     restart: always
-    depends_on:
-      - "pihole"  
     image: mongo:latest
     volumes:
       - ${USERDIR}/mongo:/data/db
@@ -105,9 +101,7 @@ services:
   influxdb:
     container_name: influxdb
     restart: always
-    image: influxdb:latest
-    depends_on:
-      - "pihole"  
+    image: influxdb:latest  
     volumes:
       # any file cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
       - ${USERDIR}/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
@@ -126,7 +120,6 @@ services:
     image: grafana/grafana:latest
     depends_on:
       - "influxdb"
-      - "pihole"
     ports:
       - "3000:3000"
     user: "472"
@@ -141,7 +134,6 @@ services:
     image: chronograf:latest
     depends_on:
       - "influxdb"
-      - "pihole"
     volumes:
       - ${USERDIR}/chronograf:/var/lib/chronograf
     ports:
@@ -156,7 +148,6 @@ services:
     image: homeassistant/home-assistant:latest
     depends_on:
       - "influxdb"
-      - "pihole"
       - "traefik"
     volumes:
       - ${USERDIR}/hass-config:/config
@@ -187,13 +178,12 @@ services:
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
 
-  nodered1:
-    container_name: node-red-1
+  nodered:
+    container_name: node-red
     restart: always
     image: nodered/node-red-docker:latest
     depends_on:
       - "homeassistant"
-      - "pihole"
     user: root
     volumes:
       - ${USERDIR}/node-red-1/user:/data
@@ -388,7 +378,7 @@ services:
   duplicati:
     image: duplicati/duplicati
     container_name: duplicati
-    restart: unless-stopped
+    restart: always
     network_mode: "bridge"
     ports:
         - '8200:8200'

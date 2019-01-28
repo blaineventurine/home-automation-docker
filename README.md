@@ -406,7 +406,7 @@ in it. Make sure neither of those files are indented - Fail2Ban will complain.
 
 ## Portainer
 
-Portainer a great web GUI to monitor and manage your Docker setup. You can start and stop containers, keep track of images, networks, volumes - all sorts of stuff. I find it useful also for viewing individual logs, and occasionally opening a terminal directly into a container.
+Portainer a great web GUI to monitor and manage your Docker setup. You can start and stop containers, keep track of images, networks, volumes - all sorts of stuff. I find it useful also for viewing individual logs, and occasionally opening a terminal directly into a container. Add this into the `docker-compose` file:
 
     portainer:
       container_name: portainer
@@ -437,28 +437,323 @@ Portainer a great web GUI to monitor and manage your Docker setup. You can start
         - "traefik.frontend.headers.STSPreload=true"
         - "traefik.frontend.headers.frameDeny=true"
 
+Most of this should look a little familiar - we're creating the container with the latest image, exposing the socket so it can see all the other containers, giving it a port, setting the timezone, and finally creating a route for Traefik. 
+
+## Watchtower
+
+Watchtower is great to run if you like making sure all your images are updated automatically. It will checks for updates, spin down the container, cleanup the old image, and spin up a container using the latest version. As long as your persistent data paths are set properly, you won't lose anything important when this happens.
+
+    watchtower:
+      container_name: watchtower
+      hostname: watchtower
+      restart: always
+      image: v2tec/watchtower
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+      command: --schedule "0 0 4 * * *" --cleanup
+
 ## InfluxDB
+
+InfluxDB is a database meant for time-series data - things like readings from a sensor, or a lot of readings from a lot of sensors. Home Assistant tracks a ton of data, some of which I might actually find a use for one day. InfluxDB makes a great backend to it.
+
+    influxdb:
+      container_name: influxdb
+      restart: always
+      image: influxdb:latest
+      volumes:
+        # any file cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
+        - ${USERDIR}/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
+        - ${USERDIR}/influxdb/db:/var/lib/influxdb
+      ports:
+        - "8086:8086"
+      networks:
+        - traefik_proxy
+        - default
+      labels:
+        - "traefik.enable=false"
+
+Before starting this container, make sure to create the `influxdb/influxdb.conf` file - even if it's empty, it needs to be there. Influx can populate it when it starts up.
 
 ## Grafana
 
+Grafana is a nice companion to InfluxDB. It allows you to create charts, graphs, and other visualizations of the data stored in InfluxDB. I use it to keep track of the temperature in various places in my house, monitor the CPU, RAM, and disk usage on my server, graph my internet speed, all sorts of things. If I want to create a chart showing how often my front door has been opened and for how long over the last year, Grafana can do it.
+
+    grafana:
+      container_name: grafana
+      restart: always
+      image: grafana/grafana:latest
+      depends_on:
+        - "influxdb"
+      ports:
+        - "3000:3000"
+      user: "472"
+      # to enable persistant storage, you might need to modify user permissions by creating this container in
+      # interactive mode and adjusting the permissions from a shell first
+      volumes:
+        - ${USERDIR}/grafana:/var/lib/grafana
+
+Two new sections here: `depends_on` and `user` we haven't seen before. The `depends_on` section just means that whatever container is listed in there needs to start the process of spinning up first, before this one does. It doesn't guarantee it will actually be done starting before this one starts though.
+
+The `user`
+
+## Chronograf
+
+    chronograf:
+      container_name: chronograf
+      restart: always
+      image: chronograf:latest
+      depends_on:
+        - "influxdb"
+      volumes:
+        - ${USERDIR}/chronograf:/var/lib/chronograf
+      ports:
+        - "8888:8888"
+      environment:
+        - PGID=${PGID}
+        - PUID=${PUID}
+
 ## MariaDB
+
+MariaDB is a drop-in replacement for MySQL. I use it for NextCloud, rather than the default SQLite.
+
+    mariadb:
+      image: mariadb:latest
+      container_name: "mariadb"
+      hostname: mariadb
+      command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+      restart: always
+      volumes:
+        - ${USERDIR}/mariadb/config:/config
+        - ${USERDIR}/mariadb/mysql:/var/lib/mysql
+      ports:
+        - "3306:3306/tcp"
+      environment:
+        - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+        - MYSQL_USER=${MYSQL_USER}
+        - MYSQL_DATABASE=${MYSQL_DATABASE}
+        - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      labels:
+        - traefik.enable=false
+
+## PHPMyAdmin
+
+PHPMyAdmin is essentially a GUI for interacting with MySQL and MariaDB databases.
+
+    phpmyadmin:
+    hostname: phpmyadmin
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    links:
+      - mariadb:db
+    ports:
+      - 9999:80
+    environment:
+      - PMA_HOST=mariadb
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    labels:
+      - traefik.enable=false
 
 ## MongoDB
 
+    mongo:
+    container_name: mongo
+    restart: always
+    image: mongo:latest
+    volumes:
+      - ${USERDIR}/mongo:/data/db
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "27017:27017"
+
 ## Nextcloud
+
+Self-hosted file storage, calendar, collaboration tools, and a lot more. Think Google Drive, except the data belongs to you.
+
+    nextcloud:
+    container_name: nextcloud
+    restart: always
+    image: linuxserver/nextcloud:latest
+    volumes:
+      - ${USERDIR}/nextcloud/config:/config
+      #path to where nextcloud will store files
+      - ${USERDIR}/nextcloud/data:/data
+      - ${USERDIR}/shared:/shared
+    # ports:
+    #   - "9443:443"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+    networks:
+      - traefik_proxy
+    links:
+      - mariadb
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=nextcloud"
+      - "traefik.frontend.rule=Host:nextcloud.${DOMAINNAME}"
+      - "traefik.port=443"
+      - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
 
 ## Mosquitto
 
-## HomeAssistant
+Mosquitto is an MQTT broker. 
+
+    mqtt:
+      container_name: MQTT
+      restart: always
+      image: eclipse-mosquitto:latest
+      volumes:
+        - ${USERDIR}/mosquitto/config/:/mosquitto/config/
+        - ${USERDIR}/mosquitto/log:/mosquitto/log
+        - ${USERDIR}/mosquitto/data:/mosquitto/data
+        - /etc/localtime:/etc/localtime:ro
+      ports:
+        - "1883:1883"
+        - "9001:9001"
+      networks:
+        - traefik_proxy
+        - default
+      labels:
+        - "traefik.enable=false"
+
+## Home Assistant
+
+Home Assistant is a pretty incredible project that allows you to automate your home.
+
+    homeassistant:
+    container_name: home-assistant
+    restart: always
+    image: homeassistant/home-assistant:latest
+    depends_on:
+      - "influxdb"
+      - "traefik"
+    volumes:
+      - ${USERDIR}/hass-config:/config
+      - /etc/localtime:/etc/localtime:ro
+      - ${USERDIR}/hass_media:/media
+    #network_mode: host
+    privileged: true
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    networks:
+      - traefik_proxy
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=homeassistant"
+      - "traefik.frontend.rule=Host:ha.${DOMAINNAME}"
+      - "traefik.port=8123"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
 
 ## Node-RED
 
+    nodered:
+      container_name: node-red
+      restart: always
+      image: nodered/node-red-docker:latest
+      depends_on:
+        - "homeassistant"
+      user: root
+      volumes:
+        - ${USERDIR}/node-red-1/user:/data
+        - /etc/localtime:/etc/localtime:ro
+      ports:
+        - "1880:1880"
+
 ## PiHole
+
+PiHole is a network-wide ad-blocker. I've got close to a million domains on my blocklist. I've almost forgotten what the internet is like with ads. PiHole requires a little extra configuration - it doesn't always play nice with Docker, and you'll need to adjust some settings on your router.
+
+    pihole:
+      image: pihole/pihole:latest
+      container_name: pihole
+      ports:
+        - "${LOCAL_IP}:53:53/tcp"
+        - "${LOCAL_IP}:53:53/udp"
+        # - "${LOCAL_IP}:80:80/tcp"
+        - "${LOCAL_IP}:7443:443/tcp"
+        - "${LOCAL_IP}:7080:80/tcp"
+      cap_add:
+        - NET_ADMIN
+      depends_on:
+        - traefik
+      environment:
+        ServerIP: ${LOCAL_IP}
+        WEBPASSWORD: ${PIHOLE_PASSWORD}
+        VIRTUAL_PORT: 80
+      volumes:
+        - ${USERDIR}/pihole:/etc/pihole
+        # make sure to manually create this log file before first run
+        - ${USERDIR}/pihole/log/pihole.log:/var/log/pihole.log
+        - /etc/dnsmasq.d:/etc/dnsmasq.d
+      # - ${USERDIR}/pihole/misc/dnsmasq.leases:/var/lib/misc/dnsmasq.leases
+      restart: always
+      dns: 
+        - 127.0.0.1
+        - 1.1.1.1
 
 ## Duplicati
 
+Duplicati is a very easy to use file backup system. Since I've got a few Samba shares scattered throughout my home network, I keep backups of my essential stuff on all of them.
+
+    duplicati:
+    image: duplicati/duplicati
+    container_name: duplicati
+    restart: always
+    network_mode: "bridge"
+    ports:
+        - '8200:8200'
+    environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+    volumes:
+        - '${USERDIR}/duplicati:/config'
+        - '${USERDIR}/backupOnDesktop:/backups'
+        - '${USERDIR}:/source'
+        - '/etc/localtime:/etc/localtime:ro'
+
 ## Organizr
+
+Organizr is a dashboard for media containers.
 
 ## Samba
 
+Samba is a network file-sharing system.
 
+## Next Steps
+
+I'm always playing around, adjusting things, adding new containers I think I might use, tweaking the ones I have. Some things on my list:
+
+* Set up a few more machines to act as hosts, and convert all of this to a Docker Swarm
+* Cloud backup in Duplicati to Azure or AWS
+* Setup Emby and integrate with Organizr
+* Setup a CI/CD pipeline for my personal website from a self-hosted GitLab instance
+* phpIPAM, for IP address management
+* Bookstack, a simple wiki for organizing information like what's contained in this document
