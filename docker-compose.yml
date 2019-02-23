@@ -192,6 +192,7 @@ services:
       - "1880:1880"
   
   mqttbridge:
+    container_name: mqttbridge
     image: stjohnjohnson/smartthings-mqtt-bridge:latest
     volumes:
       - ${USERDIR}/mqtt-bridge:/config
@@ -206,6 +207,7 @@ services:
       - "traefik.enable=false"
   
   fail2ban:
+    container_name: fail2ban
     image: crazymax/fail2ban:latest
     network_mode: "host"
     cap_add:
@@ -335,6 +337,21 @@ services:
     labels:
       - traefik.enable=false
 
+  ipam:
+    container_name: ipam
+    depends_on:
+      - mariadb
+    image: pierrecdn/phpipam
+    volumes:
+      - ${USERDIR}/phpipam:/var/www/
+    environment:
+      - MYSQL_ENV_MYSQL_USER=${MYSQL_ROOT_USER}
+      - MYSQL_ENV_MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_ENV_MYSQL_HOST=mariadb
+      - MYSQL_ENV_MYSQL_DB=${PHPIPAM_DATABASE}
+    ports:
+      - "3280:80"
+
   watchtower:
     container_name: watchtower
     hostname: watchtower
@@ -387,10 +404,78 @@ services:
         - PUID=${PUID}
         - PGID=${PGID}
     volumes:
-        - '${USERDIR}/duplicati:/config'
+        - '${USERDIR}/duplicati/config:/config'
+        - '${USERDIR}/duplicati/data:/data/Duplicati'
         - '${USERDIR}/backupOnDesktop:/backups'
         - '${USERDIR}:/source'
         - '/etc/localtime:/etc/localtime:ro'
+
+  bookstack:
+    container_name: bookstack
+    image: solidnerd/bookstack
+    depends_on:
+    - mariadb
+    environment:
+    - DB_HOST=mariadb:3306
+    - DB_DATABASE=${BOOKSTACK_DATABASE}
+    - DB_USERNAME=${BOOKSTACK_DATABASE_USERNAME}
+    - DB_PASSWORD=${BOOKSTACK_DATABASE_PASSWORD}
+    volumes:
+    - ${USERDIR}/bookstack/uploads:/var/www/bookstack/public/uploads
+    - ${USERDIR}/bookstack/storage:/var/www/bookstack/public/storage
+    ports:
+    - "8581:80"
+
+  emby:
+    image: emby/embyserver:latest
+    container_name: emby
+    #network_mode: host
+    ports:
+      - 8096:8096
+      - 8920:8920
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${USERDIR}/emby:/config
+      - ${EMBY_MEDIA_PATH}:/media
+    environment:
+      - VIRTUAL_PORT=8096
+      - VIRTUAL_HOST=emby.htpc
+      - AUTO_UPDATES_ON=true
+      - APP_UID=${PUID}
+      - APP_GID=${PGID}
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=emby"
+      - "traefik.frontend.rule=Host:emby.${DOMAINNAME}"  
+      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /emby"
+      - "traefik.port=80"
+      - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+
+  calibre-web:
+    image: linuxserver/calibre-web
+    container_name: calibre-web
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${USERDIR}/calibre/config:/config
+      - ${CALIBRE_MEDIA_PATH}:/books
+    ports:
+      - 8083:8083
+    restart: unless-stopped
 
 networks:
   traefik_proxy:

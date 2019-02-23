@@ -732,7 +732,7 @@ Node-RED allows you to setup complicated configurations of devices. It integrate
 
 PiHole is a network-wide ad-blocker. I've got close to a million domains on my blocklist. I've almost forgotten what the internet is like with ads. My phone is configured with [Tasker](https://tasker.joaoapps.com/) to automatically connect to a VPN when I leave my home WiFi network, so the ad-blocking persists on my phone even when I'm away.
 
- PiHole requires a little extra configuration - it doesn't always play nice with Docker, and you'll need to adjust some settings on your router. You need to set your DNS server IP to the IP address of the machine hosting PiHole. PiHole can also function as a DHCP server for you local network, though I'm looking into using [phpIPAM](https://phpipam.net/) for that, so my router is handling it for now.
+ PiHole requires a little extra configuration - it doesn't always play nice with Docker, and you'll need to adjust some settings on your router. You need to set your DNS server IP to the IP address of the machine hosting PiHole. PiHole can also function as a DHCP server for you local network, but my router is handling that for now.
 
     pihole:
       image: pihole/pihole:latest
@@ -822,9 +822,13 @@ Organizr is a dashboard for media containers.
         - "traefik.frontend.headers.STSPreload=true"
         #- "traefik.frontend.headers.frameDeny=true"
 
+## Bookstack
+
+After installion, the default login is `admin@admin.com` and the password is `password`.
+
 ## Samba
 
-Samba is a network file-sharing system.
+Samba is a network file-sharing system. It has its own section because it requires a few steps to get running properly. This is one thing that doesn't live in a Docker container.
 
 ## Samsung SmartThings Integration
 
@@ -857,8 +861,9 @@ I'm always playing around, adjusting things, adding new containers I think I mig
 
 * Set up a few more machines to act as hosts, and convert all of this to a Docker Swarm
 * Cloud backup in Duplicati to Azure or AWS
-* Setup Emby and integrate with Organizr
-* Setup a CI/CD pipeline for my personal website from a self-hosted GitLab instance
+* Setup Emby/Plex/Kodi and integrate with Organizr
+* Setup a CI/CD pipeline for my personal website from a self-hosted GitLab instance to AWS or Azure
 * phpIPAM, for IP address management
 * Bookstack, a simple wiki for organizing information like what's contained in this document
 * Migrate OpenVPN to a container
+* Container health checks

@@ -23,6 +23,8 @@ frontend:
 # Enables configuration UI
 config:
 
+system_health:
+
 # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
  http:
   base_url: !secret base_url
@@ -89,7 +91,7 @@ sensor:
   #     - apparent_temperature
   #     - precip_probability
   #     - pressure
-    update_interval:
+    scan_interval:
       minutes: 5
 
   - platform: mqtt
@@ -108,55 +110,52 @@ sensor:
     name: "Front Door Temperature"
     state_topic: "smartthings/Front Door Sensor/temperature"
     unit_of_measurement: '°F'
-    retain: true
+    #retain: true
   - platform: mqtt
     name: "Front Door Contact Battery"
     state_topic: "smartthings/Front DoorSensor/battery"
     unit_of_measurement: '%'
-    retain: true
+    #retain: true
   - platform: mqtt
     name: "Kitchen Door Temperature"
     state_topic: "smartthings/Kitchen Door Sensor/temperature"
     unit_of_measurement: '°F'
-    retain: true
+    #retain: true
   - platform: mqtt
     name: "Kitchen Door Contact Battery"
     state_topic: "smartthings/Kitchen Door Sensor/battery"
     unit_of_measurement: '%'
-    retain: true
+    #retain: true
   
   - platform: mqtt
     name: "Tablet Light Sensor"
     state_topic: "wallpanel/sensor/light"
     unit_of_measurement: "lx"
-    retain: true
+    #retain: true
     value_template: "{{ value_json.value }}"
   
   - platform: mqtt
     name: "Office Motion Sensor Temperature"
     state_topic: "smartthings/Motion Sensor/temperature"
     unit_of_measurement: '°F'
-    retain: true
+    #retain: true
 
 binary_sensor:
   - platform: mqtt
     name: "Kitchen Door Contact"
     state_topic: "smartthings/Kitchen Door Sensor/contact"
-    retain: true
     payload_on: "open"
     payload_off: "closed"
     device_class: opening
   - platform: mqtt
     name: "Front Door Contact"
     state_topic: "smartthings/Front Door Sensor/contact"
-    retain: true
     payload_on: "open"
     payload_off: "closed"
     device_class: opening
   - platform: mqtt
     name: "Office Motion Sensor"
     state_topic: "smartthings/Motion Sensor/motion"
-    retain: true
     payload_on: "active"
     payload_off: "inactive"
     
@@ -189,21 +188,21 @@ switch:
     command_topic: "smartthings/Kitchen Table Outlet/switch"
     payload_on: "on"
     payload_off: "off"
-    retain: true
+    #retain: true
   - platform: mqtt
     name: OfficeOutlet
     state_topic: "smartthings/Office Outlet/switch"
     command_topic: "smartthings/Office Outlet/switch"
     payload_on: "on"
     payload_off: "off"
-    retain: true
+    #retain: true
   - platform: mqtt
     name: StoveOutlet
     state_topic: "smartthings/Stove Outlet/switch"
     command_topic: "smartthings/Stove Outlet/switch"
     payload_on: "on"
     payload_off: "off"
-    retain: true
+    #retain: true
 
 camera:
   - platform: yi
@@ -241,6 +240,9 @@ media_player:
   - platform: spotify
     client_id: !secret spotify_client_id
     client_secret: !secret spotify_client_secret
+  - platform: emby
+    host: !secret local_ip
+    api_key: !secret emby_key
   
 roku:
   - host: !secret roku_ip
