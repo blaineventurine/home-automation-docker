@@ -68,8 +68,8 @@ services:
       - ${USERDIR}/mosquitto/data:/mosquitto/data
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - "1883:1883"
-      - "9001:9001"
+      - 1883
+      - 9001
     networks:
       - traefik_proxy
       - default
@@ -197,7 +197,7 @@ services:
     volumes:
       - ${USERDIR}/mqtt-bridge:/config
     ports:
-      - 8080:8080
+      - 8080
     links:
       - mqtt
     networks:
@@ -272,13 +272,13 @@ services:
       - ${USERDIR}/nextcloud/data:/data
       - ${USERDIR}/shared:/shared
     # ports:
-    #   - "9443:443"
+    #    - "9443:443"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${NEXTCLOUD_DATABASE}
+      - MYSQL_USER=${NEXTCLOUD_DB_USER}
+      - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
     networks:
       - traefik_proxy
     links:
@@ -313,9 +313,9 @@ services:
       - "3306:3306/tcp"
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_USER=${MYSQL_USER}
+      #- MYSQL_USER=${MYSQL_USER}
       - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      #- MYSQL_PASSWORD=${MYSQL_PASSWORD}
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
@@ -352,14 +352,14 @@ services:
     ports:
       - "3280:80"
 
-  watchtower:
-    container_name: watchtower
-    hostname: watchtower
-    restart: always
-    image: v2tec/watchtower
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    command: --schedule "0 0 4 * * *" --cleanup
+  # watchtower:
+  #   container_name: watchtower
+  #   hostname: watchtower
+  #   restart: always
+  #   image: v2tec/watchtower
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   command: --schedule "0 0 4 * * *" --cleanup
 
   organizr:
     container_name: organizr
@@ -438,8 +438,8 @@ services:
       - ${USERDIR}/emby:/config
       - ${EMBY_MEDIA_PATH}:/media
     environment:
-      - VIRTUAL_PORT=8096
-      - VIRTUAL_HOST=emby.htpc
+      #- VIRTUAL_PORT=8096
+      #- VIRTUAL_HOST=emby.htpc
       - AUTO_UPDATES_ON=true
       - APP_UID=${PUID}
       - APP_GID=${PGID}
@@ -450,7 +450,7 @@ services:
       - "traefik.backend=emby"
       - "traefik.frontend.rule=Host:emby.${DOMAINNAME}"  
       #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /emby"
-      - "traefik.port=80"
+      - "traefik.port=8920"
       - "traefik.protocol=https"
       - "traefik.docker.network=traefik_proxy"
       - "traefik.frontend.headers.SSLRedirect=true"

@@ -249,7 +249,20 @@ roku:
 
 lovelace:
   mode: yaml
+
+calendar:
+  - platform: caldav
+    url: !secret caldav_url
+    username: !secret caldav_user
+    password: !secret caldav_password
+    calendars:
+      - !secret calendar_1_name
+      - !secret calendar_2_name
+      - !secret calendar_3_name
+      - !secret calendar_4_name
     
+tplink:
+
 group: !include groups.yaml
 automation: !include automations.yaml
 script: !include scripts.yaml
