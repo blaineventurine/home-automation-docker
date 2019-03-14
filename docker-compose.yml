@@ -352,14 +352,14 @@ services:
     ports:
       - "3280:80"
 
-  # watchtower:
-  #   container_name: watchtower
-  #   hostname: watchtower
-  #   restart: always
-  #   image: v2tec/watchtower
-  #   volumes:
-  #     - /var/run/docker.sock:/var/run/docker.sock
-  #   command: --schedule "0 0 4 * * *" --cleanup
+  watchtower:
+    container_name: watchtower
+    hostname: watchtower
+    restart: always
+    image: v2tec/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: homeassistant emby pihole --schedule "0 0 4 * * *" --cleanup
 
   organizr:
     container_name: organizr
@@ -404,11 +404,11 @@ services:
         - PUID=${PUID}
         - PGID=${PGID}
     volumes:
-        - '${USERDIR}/duplicati/config:/config'
-        - '${USERDIR}/duplicati/data:/data/Duplicati'
-        - '${USERDIR}/backupOnDesktop:/backups'
-        - '${USERDIR}:/source'
-        - '/etc/localtime:/etc/localtime:ro'
+        - ${USERDIR}/duplicati/config:/config
+        - ${USERDIR}/duplicati/data:/data/Duplicati
+        - ${BACKUP_DIR}/duplicatiBackups:/backups
+        - ${USERDIR}:/source
+        - /etc/localtime:/etc/localtime:ro
 
   bookstack:
     container_name: bookstack
@@ -476,6 +476,26 @@ services:
     ports:
       - 8083:8083
     restart: unless-stopped
+
+  mariadb-backup:
+    container_name: mariadb-backup
+    image: tiredofit/mariadb-backup
+    links:
+     - mariadb
+    volumes:
+      - ${BACKUP_DIR}/mariadbBackups:/backups
+    environment:
+      - DB_SERVER=mariadb
+      - DB_NAME=${MYSQL_DATABASE}
+      - DB_USER=${MYSQL_ROOT_USER}
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - DB_DUMP_FREQ=1440
+      - DB_DUMP_BEGIN=+0001
+      - DB_CLEANUP_TIME=8640
+      - MD5=TRUE
+      - COMPRESSION=XZ
+      - SPLIT_DB=FALSE
+    restart: always
 
 networks:
   traefik_proxy:
