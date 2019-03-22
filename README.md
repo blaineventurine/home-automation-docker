@@ -6,26 +6,30 @@ These are all the containers I have running at home. Everything is run behind a 
 
 Currently, I'm running:
 
-* [Traefik](#traefik)
-* [Home Assistant](#home-assistant)
-* [PiHole](#pihole)
-* [Organizr](#organizr)
-* [Portainer](#portainer)
-* [Mosquitto](#mosquitto)
-* [MongoDB](#mongodb)
-* [InfluxDB](#influxdb)
-* [Grafana](#grafana)
-* [Chronograf](#chronograf)
-* [Node-RED](#node-red)
-* [MQTTBridge](#mqtt-bridge) (to make Samsung SmartThings post to MQTT topics)
-* [Fail2Ban](#fail2ban)
-* [Nextcloud](#nextlcoud)
-* [MariaDB](#mariadb)
-* [PHPMyAdmin](#phpmyadmin)
-* [Watchtower](#watchtower)
-* [Duplicati](#duplicati) (easiest backup solution I've found)
+* [Traefik](#traefik) - a reverse proxy with https thanks to Let's Encrypt
+* [Home Assistant](#home-assistant) - an amazing home automation program, integrates with nearly everything
+* [PiHole](#pihole) - network-wide ad-blocking. I have close to a million domains on my blocklist, which works out to be about 55% of queries
+* [Organizr](#organizr) - a dashboard for primarily media containers
+* [Portainer](#portainer) - an easy GUI to manage docker containers
+* [Mosquitto](#mosquitto) - an MQTT server
+* [MongoDB](#mongodb) - a database I no longer use and will probably remove
+* [InfluxDB](#influxdb) - Influx is the database I use to keep track of Home Assistant data, all the data from my sensors gets recorded here
+* [Grafana](#grafana) - Grafana allows you to create data-visualization dashboards from InfluxDB data
+* [Chronograf](#chronograf) - essentially the UI to InfluxDB
+* [Node-RED](#node-red) - simplifies automation flows, a graphical way to build automations
+* [MQTTBridge](#mqtt-bridge) - to make Samsung SmartThings post to MQTT topics
+* [Fail2Ban](#fail2ban) - blocks IP addresses after a certain amount of failed login attempts
+* [Nextcloud](#nextlcoud) - kind of like Google Drive, but better
+* [MariaDB](#mariadb) - a drop-in replacement for MySQL, used as the DB for Nextcloud and a few other things
+* [PHPMyAdmin](#phpmyadmin) - a frontend for MariaDB
+* [Watchtower](#watchtower) - automatically updates docker containers
+* [Duplicati](#duplicati) - easiest backup solution I've found
+* [Unbound](#unbound) - stop using Google DNS or Cloudflare and be your own DNS resolver
+* [Bookstack](#bookstack) - a self-hosted wiki. I use it to keep track of all my notes from school and work
+* [CalibreWeb](#calibre-web) - all of my eBooks, accessible from anywhere
+* [MariaDBBackup](#mariaDbBackup) - an automated backup for MariaDB
 
-as containers, and my server has a [Samba](#samba) share set up to eventually allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for Duplicati backups.
+as containers, and my server has a [Samba](#samba) share set up to allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for Duplicati backups.
 
 As far as devices, I'm using:
 

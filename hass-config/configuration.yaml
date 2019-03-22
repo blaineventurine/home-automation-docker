@@ -31,6 +31,7 @@ system_health:
   trusted_networks:
     - 127.0.0.1
     - !secret trusted_network_1
+  #server_port: 8123
 #  ssl_certificate: "/ssl/fullchain.pem"
 #  ssl_key: "/ssl/privkey.pem"
 
@@ -176,12 +177,6 @@ hue:
       allow_hue_groups: true
 
 switch:
-  - platform: tplink
-    host: !secret window_light_switch_ip
-    name: windowLight
-  - platform: tplink
-    host: !secret dining_room_switch_ip
-    name: diningRoomLamp
   - platform: mqtt
     name: KitchenTableOutlet
     state_topic: "smartthings/Kitchen Table Outlet/switch"
@@ -262,6 +257,9 @@ calendar:
       - !secret calendar_4_name
     
 tplink:
+   switch:
+    - host: !secret window_light_switch_ip
+    - host: !secret dining_room_switch_ip
 
 group: !include groups.yaml
 automation: !include automations.yaml

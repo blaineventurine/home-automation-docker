@@ -48,6 +48,8 @@ services:
       - "traefik.port=9000"
       - "traefik.backend=portainer"
       - "traefik.frontend.rule=Host:portainer.${DOMAINNAME}"
+      - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
       - "traefik.frontend.headers.SSLRedirect=true"
       - "traefik.frontend.headers.STSSeconds=315360000"
       - "traefik.frontend.headers.browserXSSFilter=true"
@@ -57,6 +59,7 @@ services:
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
   mqtt:
     container_name: MQTT
@@ -155,6 +158,8 @@ services:
       - ${USERDIR}/hass_media:/media
     #network_mode: host
     privileged: true
+    # ports:
+    #   - 8123:8123
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -167,6 +172,7 @@ services:
       - "traefik.backend=homeassistant"
       - "traefik.frontend.rule=Host:ha.${DOMAINNAME}"
       - "traefik.port=8123"
+      # - "traefik.protocol=https"
       - "traefik.docker.network=traefik_proxy"
       - "traefik.frontend.headers.SSLRedirect=true"
       - "traefik.frontend.headers.STSSeconds=315360000"
@@ -177,6 +183,9 @@ services:
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
 
   nodered:
     container_name: node-red
@@ -252,6 +261,7 @@ services:
       #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /traefik"
       - "traefik.port=8080"
       - "traefik.docker.network=traefik_proxy"
+      # - "traefik.protocol=https"
       - "traefik.frontend.headers.SSLRedirect=true"
       - "traefik.frontend.headers.STSSeconds=315360000"
       - "traefik.frontend.headers.browserXSSFilter=true"
@@ -261,6 +271,7 @@ services:
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
+      # - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
   nextcloud:
     container_name: nextcloud
@@ -299,6 +310,7 @@ services:
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
   
   mariadb:
     image: mariadb:latest
@@ -382,6 +394,7 @@ services:
       - "traefik.frontend.rule=Host:organizr.${DOMAINNAME}"  
       #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /organizr"
       - "traefik.port=80"
+      - "traefik.protocol=https"
       - "traefik.docker.network=traefik_proxy"
       - "traefik.frontend.headers.SSLRedirect=true"
       - "traefik.frontend.headers.STSSeconds=315360000"
@@ -392,6 +405,7 @@ services:
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       #- "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
   duplicati:
     image: duplicati/duplicati
@@ -462,6 +476,7 @@ services:
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
   calibre-web:
     image: linuxserver/calibre-web
@@ -490,7 +505,7 @@ services:
       - DB_USER=${MYSQL_ROOT_USER}
       - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - DB_DUMP_FREQ=1440
-      - DB_DUMP_BEGIN=+0001
+      - DB_DUMP_BEGIN=+0002
       - DB_CLEANUP_TIME=8640
       - MD5=TRUE
       - COMPRESSION=XZ

@@ -22,7 +22,7 @@ views:
           icon: mdi:lamp
           tap_action:
             action: toggle
-        - entity: switch.diningroomlamp
+        - entity: switch.dining_room_light
           name: Dining Room
           icon: mdi:lamp
           tap_action:
@@ -146,7 +146,7 @@ views:
       show_state: false
       title: Dining Room
       entities:
-        - entity: switch.diningroomlamp
+        - entity: switch.dining_room_light
           name: Dining Room Floor Lamp
           icon: mdi:desk-lamp
           tap_action:
@@ -155,7 +155,7 @@ views:
       show_state: false
       title: Living Room
       entities:
-        - entity: switch.windowlight
+        - entity: switch.window_lamp
           name: Window Light
           icon: mdi:desk-lamp
           tap_action:
