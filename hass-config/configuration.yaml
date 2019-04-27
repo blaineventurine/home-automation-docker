@@ -19,6 +19,7 @@ introduction:
 # Enables the frontend
 frontend:
   themes: !include themes.yaml
+  javascript_version: latest
 
 # Enables configuration UI
 config:
@@ -55,7 +56,8 @@ sun:
 
 # Text to speech
 tts:
-  - platform: google
+  - platform: google_translate
+    service_name: google_say
 
 # Cloud
 cloud:
@@ -199,18 +201,21 @@ switch:
     payload_off: "off"
     #retain: true
 
+stream:
+ffmpeg:
 camera:
-  - platform: yi
+  - platform: ffmpeg
     name: LivingRoomCamera-front
-    host: !secret living_room_camera_front_ip
-    password: !secret camera_password
-    ffmpeg_arguments: -s 800x450
+    input: -rtsp_transport tcp -i rtsp://10.15.22.27/ch0_0.h264
+    # host: !secret living_room_camera_front_ip
+    # password: !secret camera_password
+    # ffmpeg_arguments: -s 800x450
 
-  - platform: yi
-    name: LivingRoomCamera-side
-    host: !secret living_room_camera_side_ip
-    password: !secret camera_password
-    ffmpeg_arguments: -s 800x450
+  # - platform: yi
+  #   name: LivingRoomCamera-side
+  #   host: !secret living_room_camera_side_ip
+  #   password: !secret camera_password
+  #   ffmpeg_arguments: -s 800x450
 
 # device_tracker:
 #   - platform: google_maps

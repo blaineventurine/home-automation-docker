@@ -62,7 +62,7 @@ services:
       - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
   mqtt:
-    container_name: MQTT
+    container_name: mqtt
     restart: always
     image: eclipse-mosquitto:latest
     volumes:
@@ -70,14 +70,34 @@ services:
       - ${USERDIR}/mosquitto/log:/mosquitto/log
       - ${USERDIR}/mosquitto/data:/mosquitto/data
       - /etc/localtime:/etc/localtime:ro
+    environment:
+      - MOSQUITTO_USERNAME=${MOSQUITTO_USERNAME}
+      - MOSQUITTO_PASSWORD=${MOSQUITTO_PASSWORD}
     ports:
       - 1883
       - 9001
+    #   - 8883:8883
     networks:
       - traefik_proxy
-      - default
+      #- default
+      
     labels:
-      - "traefik.enable=false"
+      - "traefik.enable=true"
+      - "traefik.port=9001"
+      - "traefik.backend=mqtt"
+      - "traefik.frontend.rule=Host:mqtt.${DOMAINNAME}"
+      - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
   mongo:
     container_name: mongo
@@ -200,20 +220,20 @@ services:
     ports:
       - "1880:1880"
   
-  mqttbridge:
-    container_name: mqttbridge
-    image: stjohnjohnson/smartthings-mqtt-bridge:latest
-    volumes:
-      - ${USERDIR}/mqtt-bridge:/config
-    ports:
-      - 8080
-    links:
-      - mqtt
-    networks:
-      - traefik_proxy
-      - default
-    labels:
-      - "traefik.enable=false"
+  # mqttbridge:
+  #   container_name: mqttbridge
+  #   image: stjohnjohnson/smartthings-mqtt-bridge:latest
+  #   volumes:
+  #     - ${USERDIR}/mqtt-bridge:/config
+  #   ports:
+  #     - 8080
+  #   links:
+  #     - mqtt
+  #   networks:
+  #     - traefik_proxy
+  #     - default
+  #   labels:
+  #     - "traefik.enable=false"
   
   fail2ban:
     container_name: fail2ban
@@ -368,10 +388,10 @@ services:
     container_name: watchtower
     hostname: watchtower
     restart: always
-    image: v2tec/watchtower
+    image: v2tec/watchtower:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: homeassistant emby pihole --schedule "0 0 4 * * *" --cleanup
+    command: home-assistant pihole --schedule "0 0 4 * * *" --cleanup
 
   organizr:
     container_name: organizr
@@ -511,6 +531,60 @@ services:
       - COMPRESSION=XZ
       - SPLIT_DB=FALSE
     restart: always
+
+
+  netdata:
+      image: titpetric/netdata
+      container_name: netdata
+      restart: always
+      networks:
+          - traefik_proxy
+      ports:
+          - 19999:19999
+      volumes:
+          - ${USERDIR}/netdata/proc:/host/proc:ro
+          - ${USERDIR}/netdata//sys:/host/sys:ro
+          - ${USERDIR}/netdata//var/run/docker.sock:/var/run/docker.sock:ro
+
+  transmission:
+    image: haugene/transmission-openvpn
+    container_name: transmission-openvpn
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    restart: always
+    ports:
+      - "9091:9091"
+      - "9090:9090"
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - ${USERDIR}/transmission:/data
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - OPENVPN_PROVIDER={OPENVPN_PROVIDER}
+      - OPENVPN_USERNAME={OPENVPN_USERNAME}
+      - OPENVPN_PASSWORD={OPENVPN_PASSWORD}
+      - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60
+      - LOCAL_NETWORK={LOCAL_NETWORK}
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=0
+  # proxy:
+  #   image: haugene/transmission-openvpn-proxy
+  #   links:
+  #     - transmission
+  #   ports:
+  #     - 8080:8080
+  #   volumes:
+  #     - /etc/localtime:/etc/localtime:ro
+
+  # rss:
+  #   image: haugene/transmission-rss
+  #   links:
+  #     - transmission
+  #   environment:
+  #     - RSS_URL=http://.../xxxxx.rss
 
 networks:
   traefik_proxy:

@@ -198,12 +198,14 @@ views:
     icon: mdi:cctv
     panel: true
     cards:
-      - type: custom:surveillance-card
-        thumb_interval: 10
-        update_interval: 2
-        cameras:
-            - entity: camera.livingroomcamerafront
-            - entity: camera.livingroomcameraside
+      # - type: custom:surveillance-card
+      #   thumb_interval: 10
+      #   update_interval: 2
+      #   cameras:
+      #       - entity: camera.livingroomcamerafront
+      #       - entity: camera.livingroomcameraside
+      - type: picture-entity
+        entity: camera.livingroomcamera_front
   
   - title: Media
     icon: mdi:music-note

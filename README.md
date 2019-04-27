@@ -17,7 +17,7 @@ Currently, I'm running:
 * [Grafana](#grafana) - Grafana allows you to create data-visualization dashboards from InfluxDB data
 * [Chronograf](#chronograf) - essentially the UI to InfluxDB
 * [Node-RED](#node-red) - simplifies automation flows, a graphical way to build automations
-* [MQTTBridge](#mqtt-bridge) - to make Samsung SmartThings post to MQTT topics
+* ~~[MQTTBridge](#mqtt-bridge) - to make Samsung SmartThings post to MQTT topics~~ possibly not needed any more thanks to a Home Assistant update, still working on this
 * [Fail2Ban](#fail2ban) - blocks IP addresses after a certain amount of failed login attempts
 * [Nextcloud](#nextlcoud) - kind of like Google Drive, but better
 * [MariaDB](#mariadb) - a drop-in replacement for MySQL, used as the DB for Nextcloud and a few other things
@@ -27,7 +27,12 @@ Currently, I'm running:
 * [Unbound](#unbound) - stop using Google DNS or Cloudflare and be your own DNS resolver
 * [Bookstack](#bookstack) - a self-hosted wiki. I use it to keep track of all my notes from school and work
 * [CalibreWeb](#calibre-web) - all of my eBooks, accessible from anywhere
-* [MariaDBBackup](#mariaDbBackup) - an automated backup for MariaDB
+* [MariaDB Backup](#mariadb-backup) - an automated backup for MariaDB
+* [Transmission/OpenVPN](#transmission) - a torrent client, we'll be using a VPN for it
+* [NetData](#netdata) - network monitoring
+* [Radarr](#radarr) - 
+* [Sonarr](#sonarr) - 
+* [Jackett](#jackett) - 
 
 as containers, and my server has a [Samba](#samba) share set up to allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for Duplicati backups.
 
@@ -859,6 +864,20 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
       labels:
         - "traefik.enable=false"
 
+## Unbound
+
+  When you type an address into a web browser or click a link on a page (unless you've changed your settings to use Quad9, Google, Cloudflare, etc),
+  you're telling your ISP where you're trying to go. You're also giving them the opportunity to inject ads and track your behavior online. Switching to a different DNS proivder
+  means you're now placing your trust in them instead of your ISP. Why not cut out the middle-server and be your own DNS resolver? Unbound allows you to do that.
+
+## Calibre Web
+
+  I have a lot of eBooks, and I like having them accessible from any of my devices. For CalibreWeb, you first need to install Calibre and create a library database.
+
+## MariaDB Backup
+
+  Now that you've got Bookstack and Nextcloud up and running, you should make sure to backup that data. This container automates that process.
+
 ## Next Steps
 
 I'm always playing around, adjusting things, adding new containers I think I might use, tweaking the ones I have. Some things on my list:
@@ -868,6 +887,5 @@ I'm always playing around, adjusting things, adding new containers I think I mig
 * Setup Emby/Plex/Kodi and integrate with Organizr
 * Setup a CI/CD pipeline for my personal website from a self-hosted GitLab instance to AWS or Azure
 * phpIPAM, for IP address management
-* Bookstack, a simple wiki for organizing information like what's contained in this document
 * Migrate OpenVPN to a container
 * Container health checks
