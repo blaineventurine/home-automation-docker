@@ -61,8 +61,8 @@ services:
       - "traefik.frontend.headers.frameDeny=true"
       - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
-  mqtt:
-    container_name: mqtt
+  mosquitto:
+    container_name: mosquitto
     restart: always
     image: eclipse-mosquitto:latest
     volumes:
@@ -79,13 +79,12 @@ services:
     #   - 8883:8883
     networks:
       - traefik_proxy
-      #- default
-      
+      #- default      
     labels:
       - "traefik.enable=true"
       - "traefik.port=9001"
-      - "traefik.backend=mqtt"
-      - "traefik.frontend.rule=Host:mqtt.${DOMAINNAME}"
+      - "traefik.backend=mosquitto"
+      - "traefik.frontend.rule=Host:mosquitto.${DOMAINNAME}"
       - "traefik.protocol=https"
       - "traefik.docker.network=traefik_proxy"
       - "traefik.frontend.headers.SSLRedirect=true"
@@ -126,7 +125,7 @@ services:
     restart: always
     image: influxdb:latest  
     volumes:
-      # any file cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
+      # files cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
       - ${USERDIR}/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
       - ${USERDIR}/influxdb/db:/var/lib/influxdb
     ports:
@@ -146,7 +145,7 @@ services:
     ports:
       - "3000:3000"
     user: "472"
-    # to enable persistant storage, you might need to modify user permissions by creating this container in
+    # to enable persistent storage, you might need to modify user permissions by creating this container in
     # interactive mode and adjusting the permissions from a shell first
     volumes:
       - ${USERDIR}/grafana:/var/lib/grafana
@@ -228,7 +227,7 @@ services:
   #   ports:
   #     - 8080
   #   links:
-  #     - mqtt
+  #     - mosquitto
   #   networks:
   #     - traefik_proxy
   #     - default
@@ -239,6 +238,8 @@ services:
     container_name: fail2ban
     image: crazymax/fail2ban:latest
     network_mode: "host"
+    depends_on:
+      - "pihole"
     cap_add:
     - NET_ADMIN
     - NET_RAW
@@ -266,6 +267,8 @@ services:
     networks:
       - default
       - traefik_proxy
+    depends_on:
+      - "pihole"  
     environment:
       - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
       - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
@@ -278,10 +281,8 @@ services:
       - "traefik.backend=traefik"
       - "traefik.frontend.rule=Host:traefik.${DOMAINNAME}" 
       - "traefik.frontend.auth.basic: ${HTTP_USERNAME}:${HTTP_PASSWORD}" 
-      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /traefik"
       - "traefik.port=8080"
       - "traefik.docker.network=traefik_proxy"
-      # - "traefik.protocol=https"
       - "traefik.frontend.headers.SSLRedirect=true"
       - "traefik.frontend.headers.STSSeconds=315360000"
       - "traefik.frontend.headers.browserXSSFilter=true"
@@ -291,7 +292,6 @@ services:
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
-      # - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
   nextcloud:
     container_name: nextcloud
@@ -299,7 +299,7 @@ services:
     image: linuxserver/nextcloud:latest
     volumes:
       - ${USERDIR}/nextcloud/config:/config
-      #path to where nextcloud will store files
+      # path to where nextcloud will store files
       - ${USERDIR}/nextcloud/data:/data
       - ${USERDIR}/shared:/shared
     # ports:
@@ -312,6 +312,9 @@ services:
       - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
     networks:
       - traefik_proxy
+    depends_on:
+      - "pihole"
+      - "mariadb"  
     links:
       - mariadb
     labels:
@@ -331,6 +334,7 @@ services:
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
       - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      - com.centurylinklabs.watchtower.enable="false"
   
   mariadb:
     image: mariadb:latest
@@ -353,12 +357,16 @@ services:
       - TZ=${TZ}
     labels:
       - traefik.enable=false
+      - com.centurylinklabs.watchtower.enable="false"
   
   phpmyadmin:
     hostname: phpmyadmin
     container_name: phpmyadmin
     image: phpmyadmin/phpmyadmin:latest
     restart: always
+    depends_on:
+      - "pihole"
+      - "mariadb"  
     links:
       - mariadb:db
     ports:
@@ -389,9 +397,11 @@ services:
     hostname: watchtower
     restart: always
     image: v2tec/watchtower:latest
+    depends_on:
+      - "pihole"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-    command: home-assistant pihole --schedule "0 0 4 * * *" --cleanup
+    command: --schedule "0 0 4 * * *" --cleanup
 
   organizr:
     container_name: organizr
@@ -516,7 +526,7 @@ services:
     container_name: mariadb-backup
     image: tiredofit/mariadb-backup
     links:
-     - mariadb
+      - mariadb
     volumes:
       - ${BACKUP_DIR}/mariadbBackups:/backups
     environment:
@@ -532,19 +542,18 @@ services:
       - SPLIT_DB=FALSE
     restart: always
 
-
   netdata:
-      image: titpetric/netdata
-      container_name: netdata
-      restart: always
-      networks:
-          - traefik_proxy
-      ports:
-          - 19999:19999
-      volumes:
-          - ${USERDIR}/netdata/proc:/host/proc:ro
-          - ${USERDIR}/netdata//sys:/host/sys:ro
-          - ${USERDIR}/netdata//var/run/docker.sock:/var/run/docker.sock:ro
+    image: titpetric/netdata
+    container_name: netdata
+    restart: always
+    networks:
+        - traefik_proxy
+    ports:
+        - 19999:19999
+    volumes:
+        - ${USERDIR}/netdata/proc:/host/proc:ro
+        - ${USERDIR}/netdata/sys:/host/sys:ro
+        - ${USERDIR}/netdata/var/run/docker.sock:/var/run/docker.sock:ro
 
   transmission:
     image: haugene/transmission-openvpn
@@ -554,20 +563,31 @@ services:
     devices:
       - /dev/net/tun
     restart: always
+    depends_on:
+      - "pihole"
     ports:
-      - "9091:9091"
-      - "9090:9090"
+      - "9091:9091/tcp"
+      - "9090:9090/tcp"
+      - "9091:9091/udp"
+      - "9090:9090/udp"
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${USERDIR}/transmission:/data
+      - ${EMBY_MEDIA_PATH}/Downloads:/data/completed
+      - ${EMBY_MEDIA_PATH}/Downloads:/data/incomplete
+      - ${EMBY_MEDIA_PATH}/torrent-files:/data/watch
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
-      - OPENVPN_PROVIDER={OPENVPN_PROVIDER}
-      - OPENVPN_USERNAME={OPENVPN_USERNAME}
-      - OPENVPN_PASSWORD={OPENVPN_PASSWORD}
+      - OPENVPN_PROVIDER=${OPENVPN_PROVIDER}
+      - OPENVPN_USERNAME=${OPENVPN_USERNAME}
+      - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60
-      - LOCAL_NETWORK={LOCAL_NETWORK}
+      - LOCAL_NETWORK=${LOCAL_NETWORK}
+      - TRANSMISSION_RATIO_LIMIT=1.00
+      - TRANSMISSION_RATIO_LIMIT_ENABLED=true
+      - TRANSMISSION_SPEED_LIMIT_UP=1
+      - TRANSMISSION_SPEED_LIMIT_UP_ENABLED=true
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
   # proxy:
@@ -585,6 +605,81 @@ services:
   #     - transmission
   #   environment:
   #     - RSS_URL=http://.../xxxxx.rss
+
+  sonarr:
+    image: linuxserver/sonarr
+    container_name: sonarr
+    restart: always
+    networks:
+        - traefik_proxy       
+    ports:
+        - 8989:8989
+    depends_on:
+      - "transmission-openvpn" 
+    volumes:
+        - ${USERDIR}/sonarr/config:/config
+        - ${EMBY_MEDIA_PATH/Downloads:/downloads
+        - ${EMBY_MEDIA_PATH}/TV:/tv
+        - /etc/localtime:/etc/localtime:ro
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+
+  radarr:
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    depends_on:
+      - "transmission-openvpn" 
+    ports:
+      - "7878:7878"
+    volumes:
+        - ${USERDIR}/radarr/config:/config
+        - ${EMBY_MEDIA_PATH}/Movies:/movies
+        - ${EMBY_MEDIA_PATH}/Downloads:/downloads
+        - /etc/localtime:/etc/localtime:ro
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    # labels:
+    #     - traefik.backend=radarr
+    #     - traefik.frontend.rule=Host:radarr.${DOMAIN}
+    #     - traefik.docker.network=traefik
+    #     - traefik.port=7878
+    networks:
+        - traefik_proxy
+    # expose:
+    #     - 7878
+    restart: always
+
+  jackett:
+    image: linuxserver/jackett:latest
+    container_name: jackett
+    depends_on:
+      - "transmission-openvpn" 
+    ports:
+      - "9117:9117"
+    volumes:
+        - /${USERDIR}/jackett/config:/config
+        - ${EMBY_MEDIA_PATH}/Downloads:/downloads
+        - /etc/localtime:/etc/localtime:ro
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    # labels:
+    #     - traefik.backend=jackett
+    #     - traefik.frontend.rule=Host:jackett.${DOMAIN}
+    #     - traefik.docker.network=traefik
+    #     - traefik.port=9117
+    networks:
+        - traefik_proxy
+    # expose:
+    #     - 9117
+    restart: always
+
+
 
 networks:
   traefik_proxy:

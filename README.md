@@ -28,13 +28,14 @@ Currently, I'm running:
 * [Bookstack](#bookstack) - a self-hosted wiki. I use it to keep track of all my notes from school and work
 * [CalibreWeb](#calibre-web) - all of my eBooks, accessible from anywhere
 * [MariaDB Backup](#mariadb-backup) - an automated backup for MariaDB
-* [Transmission/OpenVPN](#transmission) - a torrent client, we'll be using a VPN for it
 * [NetData](#netdata) - network monitoring
-* [Radarr](#radarr) - 
-* [Sonarr](#sonarr) - 
-* [Jackett](#jackett) - 
+* [Emby](#emby) - a media server, with apps for Roku, Android, iPhone, and more
+* [Transmission/OpenVPN](#transmission) - a torrent client, we'll be using a VPN with it
+* [Jackett](#jackett) - a helpful wrapper for Radarr and Sonarr
+* [Radarr](#radarr) - an automated way to find and download movies via torrent or newsgroup
+* [Sonarr](#sonarr) - like Radarr, but for TV shows - add a show to your wanted list and episodes will show up in Emby as they get downloaded
 
-as containers, and my server has a [Samba](#samba) share set up to allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for Duplicati backups.
+as containers, and my server has a [Samba](#samba) share set up to allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for [Duplicati](#duplicati) backups.
 
 As far as devices, I'm using:
 
@@ -61,7 +62,7 @@ I'm in the process of adding a Pi running OctoPrint (for controlling my 3D print
 
 ## Docker Setup
 
-If you don't have Docker installed, follow the instuctions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/).
+If you don't have Docker installed, follow the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/).
 
 Having a specific Docker group is useful so you don't have to `sudo` everything, so after installation run
 
@@ -105,6 +106,22 @@ PIHOLE_PASSWORD=
 LOCAL_IP=  
 BACKUPPC_ADMIN_USER=  
 BACKUPPC_ADMIN_PASS=  
+BACKUPPC_ADMIN_USER=  
+BACKUPPC_ADMIN_PASS=  
+BOOKSTACK_DATABASE=  
+BOOKSTACK_DATABASE_USERNAME=  
+BOOKSTACK_DATABASE_PASSWORD=  
+PHPIPAM_USER=  
+PHPIPAM_PASSWORD=  
+PHPIPAM_DATABASE=  
+EMBY_MEDIA_PATH=  
+CALIBRE_MEDIA_PATH=  
+MOSQUITTO_USERNAME=  
+MOSQUITTO_PASSWORD=  
+OPENVPN_PROVIDER=  
+OPENVPN_USERNAME=  
+OPENVPN_PASSWORD=  
+LOCAL_NETWORK=  
 
 `PUID` and `PGID` can be found on your system by running `id $user`.  
 `TZ` is your current time zone  
@@ -153,7 +170,7 @@ You will eventually need to forward ports `80` and `443` to the local IP of your
 
 Add this as a service to your `docker-compose.yml` file.
 
-      traefik:
+    traefik:
         hostname: traefik
         image: traefik:latest
         container_name: traefik
@@ -167,12 +184,12 @@ Add this as a service to your `docker-compose.yml` file.
           - ${USERDIR}/shared:/shared
           - ${USERDIR}/traefik/log:/var/log
         ports:
-        - "80:80"
-        - "443:443"
-        - "8090:8080"
+          - "80:80"
+          - "443:443"
+          #- "8090:8080"
         networks:
           - default
-          - traefik_proxy
+          - traefik_proxy 
         environment:
           - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
           - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
@@ -181,7 +198,21 @@ Add this as a service to your `docker-compose.yml` file.
           - --accessLog.filePath=/var/log/access.log
           - --accessLog.filters.statusCodes=400-499
         labels:
-          - "traefik.enable=false"
+          - "traefik.enable=true"
+          - "traefik.backend=traefik"
+          - "traefik.frontend.rule=Host:traefik.${DOMAINNAME}" 
+          - "traefik.frontend.auth.basic: ${HTTP_USERNAME}:${HTTP_PASSWORD}" 
+          - "traefik.port=8080"
+          - "traefik.docker.network=traefik_proxy"
+          - "traefik.frontend.headers.SSLRedirect=true"
+          - "traefik.frontend.headers.STSSeconds=315360000"
+          - "traefik.frontend.headers.browserXSSFilter=true"
+          - "traefik.frontend.headers.contentTypeNosniff=true"
+          - "traefik.frontend.headers.forceSTSHeader=true"
+          - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+          - "traefik.frontend.headers.STSIncludeSubdomains=true"
+          - "traefik.frontend.headers.STSPreload=true"
+          - "traefik.frontend.headers.frameDeny=true"
 
 At the top, we have
 
@@ -226,7 +257,7 @@ The next section,
         - "443:443"
         - "8090:8080"
 
-maps our access ports. `HostPort:ContainerPort` is the schema, so to access the port the container sees as `8080`, I type in `localhost:8090` in the host machine. For most containers, the host ports are arbitrary - except Traefik needs `80` and `443`, and PiHole will need `53`.  
+maps our access ports. `HostPort:ContainerPort` is the schema, so to access the port the container sees as `8080`, I type in `localhost:8090` in the host machine. It is commented out up above because I access Traefik though my domain name, not a local IP any more. For most containers, the host ports are arbitrary - except Traefik needs `80` and `443`, and PiHole will need `53`.  
 
 Docker keeps containers fairly isolated from each other by default, so this section
 
@@ -259,7 +290,6 @@ The labels section,
           - "traefik.enable=true"
           - "traefik.backend=traefik"
           - "traefik.frontend.rule=Host:traefik.${DOMAINNAME}"  
-          #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /traefik"
           - "traefik.port=8080"
           - "traefik.docker.network=traefik_proxy"
           - "traefik.frontend.headers.SSLRedirect=true"
@@ -460,6 +490,8 @@ Portainer a great web GUI to monitor and manage your Docker setup. You can start
         - "traefik.port=9000"
         - "traefik.backend=portainer"
         - "traefik.frontend.rule=Host:portainer.${DOMAINNAME}"
+        - "traefik.protocol=https"
+        - "traefik.docker.network=traefik_proxy"
         - "traefik.frontend.headers.SSLRedirect=true"
         - "traefik.frontend.headers.STSSeconds=315360000"
         - "traefik.frontend.headers.browserXSSFilter=true"
@@ -469,6 +501,7 @@ Portainer a great web GUI to monitor and manage your Docker setup. You can start
         - "traefik.frontend.headers.STSIncludeSubdomains=true"
         - "traefik.frontend.headers.STSPreload=true"
         - "traefik.frontend.headers.frameDeny=true"
+        - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
 Most of this should look a little familiar - we're creating the container with the latest image, exposing the socket so it can see all the other containers, giving it a port, setting the timezone, and finally creating a route for Traefik.
 
@@ -476,7 +509,7 @@ Once Portainer is up, it's helpful to go through your existing containers and ch
 
 ## Watchtower
 
-Watchtower is great to run if you like making sure all your images are updated automatically. It will checks for updates, spin down the container, cleanup the old image, and spin up a container using the latest version. As long as your persistent data paths are set properly, you won't lose anything important when this happens.
+Watchtower is great to run if you like making sure all your images are updated automatically. It will checks for updates, spin down the container, cleanup the old image, and spin up a container using the latest version. As long as your persistent data paths are set properly, you won't lose anything important when this happens, with one caveat: take care of MariaDB updates manually. You can exempt a container from Watchtower's update process by applying the label ` com.centurylinklabs.watchtower.enable="false" ` to it.
 
     watchtower:
       container_name: watchtower
@@ -494,9 +527,9 @@ InfluxDB is a database meant for time-series data - things like readings from a 
     influxdb:
       container_name: influxdb
       restart: always
-      image: influxdb:latest
+      image: influxdb:latest  
       volumes:
-        # any file cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
+        # files cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
         - ${USERDIR}/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
         - ${USERDIR}/influxdb/db:/var/lib/influxdb
       ports:
@@ -522,7 +555,7 @@ Grafana is a nice companion to InfluxDB. It allows you to create charts, graphs,
       ports:
         - "3000:3000"
       user: "472"
-      # to enable persistant storage, you might need to modify user permissions by creating this container in
+      # to enable persistent storage, you might need to modify user permissions by creating this container in
       # interactive mode and adjusting the permissions from a shell first
       volumes:
         - ${USERDIR}/grafana:/var/lib/grafana
@@ -566,14 +599,15 @@ MariaDB is a drop-in replacement for MySQL. I use it for NextCloud, rather than 
         - "3306:3306/tcp"
       environment:
         - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-        - MYSQL_USER=${MYSQL_USER}
+        #- MYSQL_USER=${MYSQL_USER}
         - MYSQL_DATABASE=${MYSQL_DATABASE}
-        - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+        #- MYSQL_PASSWORD=${MYSQL_PASSWORD}
         - PUID=${PUID}
         - PGID=${PGID}
         - TZ=${TZ}
       labels:
         - traefik.enable=false
+        - com.centurylinklabs.watchtower.enable="false"
 
 Back in the `.env` file, fill out the MYSQL-related variables. I named my database `nextcloud`, set two different password for the root and user, and gave it a username.
 
@@ -598,59 +632,60 @@ PHPMyAdmin is essentially a GUI for interacting with MySQL and MariaDB databases
 
 ## MongoDB
 
-Mongo is another database, a NoSQL document store. It's very flexible - you're not locked into a schema. I'm phasing it out of my system though, as between InfluxDB and MariaDB, all of my use cases are covered. Consider this part optional, if you want to play with it. 
+Mongo is another database, a NoSQL document store. It's very flexible - you're not locked into a schema. I'm phasing it out of my system though, as between InfluxDB and MariaDB, all of my use cases are covered. Consider this part optional, if you want to play with it.
 
     mongo:
-    container_name: mongo
-    restart: always
-    image: mongo:latest
-    volumes:
-      - ${USERDIR}/mongo:/data/db
-      - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "27017:27017"
+      container_name: mongo
+      restart: always
+      image: mongo:latest
+      volumes:
+        - ${USERDIR}/mongo:/data/db
+        - /etc/localtime:/etc/localtime:ro
+      ports:
+        - "27017:27017"
 
 ## Nextcloud
 
 Self-hosted file storage, calendar, collaboration tools, and a lot more. Think Google Drive, except the data belongs to you. There native apps for all major platforms to use for syncing. You can create users, groups, assign permissions, collaborate, extend it in multiple ways - it's a very useful piece of software.
 
     nextcloud:
-    container_name: nextcloud
-    restart: always
-    image: linuxserver/nextcloud:latest
-    volumes:
-      - ${USERDIR}/nextcloud/config:/config
-      #path to where nextcloud will store files
-      - ${USERDIR}/nextcloud/data:/data
-      - ${USERDIR}/shared:/shared
-    # ports:
-    #   - "9443:443"
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-      - MYSQL_USER=${MYSQL_USER}
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
-    networks:
-      - traefik_proxy
-    links:
-      - mariadb
-    labels:
-      - "traefik.enable=true"
-      - "traefik.backend=nextcloud"
-      - "traefik.frontend.rule=Host:nextcloud.${DOMAINNAME}"
-      - "traefik.port=443"
-      - "traefik.protocol=https"
-      - "traefik.docker.network=traefik_proxy"
-      - "traefik.frontend.headers.SSLRedirect=true"
-      - "traefik.frontend.headers.STSSeconds=315360000"
-      - "traefik.frontend.headers.browserXSSFilter=true"
-      - "traefik.frontend.headers.contentTypeNosniff=true"
-      - "traefik.frontend.headers.forceSTSHeader=true"
-      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
-      - "traefik.frontend.headers.STSIncludeSubdomains=true"
-      - "traefik.frontend.headers.STSPreload=true"
-      - "traefik.frontend.headers.frameDeny=true"
+      container_name: nextcloud
+      restart: always
+      image: linuxserver/nextcloud:latest
+      volumes:
+        - ${USERDIR}/nextcloud/config:/config
+        # path to where nextcloud will store files
+        - ${USERDIR}/nextcloud/data:/data
+        - ${USERDIR}/shared:/shared
+      # ports:
+      #   - "9443:443"
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - MYSQL_DATABASE=${MYSQL_DATABASE}
+        - MYSQL_USER=${MYSQL_USER}
+        - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      networks:
+        - traefik_proxy
+      links:
+        - mariadb
+      labels:
+        - "traefik.enable=true"
+        - "traefik.backend=nextcloud"
+        - "traefik.frontend.rule=Host:nextcloud.${DOMAINNAME}"
+        - "traefik.port=443"
+        - "traefik.protocol=https"
+        - "traefik.docker.network=traefik_proxy"
+        - "traefik.frontend.headers.SSLRedirect=true"
+        - "traefik.frontend.headers.STSSeconds=315360000"
+        - "traefik.frontend.headers.browserXSSFilter=true"
+        - "traefik.frontend.headers.contentTypeNosniff=true"
+        - "traefik.frontend.headers.forceSTSHeader=true"
+        - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+        - "traefik.frontend.headers.STSIncludeSubdomains=true"
+        - "traefik.frontend.headers.STSPreload=true"
+        - "traefik.frontend.headers.frameDeny=true"
+        - com.centurylinklabs.watchtower.enable="false"
 
 ## Mosquitto
 
@@ -660,8 +695,8 @@ For example, various sensors I have around the house use it to communicate with 
 
 [MQTT.fx](https://mqttfx.jensd.de/index.php/download) is very useful tool to use when diagnosing MQTT issues - you can subscribe to any topic, even `#` for all (or `topic-name/#' for all subtopics of topic-name) of them and see what is published where.
 
-    mqtt:
-      container_name: MQTT
+    mosquitto:
+      container_name: mosquitto
       restart: always
       image: eclipse-mosquitto:latest
       volumes:
@@ -669,14 +704,33 @@ For example, various sensors I have around the house use it to communicate with 
         - ${USERDIR}/mosquitto/log:/mosquitto/log
         - ${USERDIR}/mosquitto/data:/mosquitto/data
         - /etc/localtime:/etc/localtime:ro
+      environment:
+        - MOSQUITTO_USERNAME=${MOSQUITTO_USERNAME}
+        - MOSQUITTO_PASSWORD=${MOSQUITTO_PASSWORD}
       ports:
-        - "1883:1883"
-        - "9001:9001"
+        - 1883
+        - 9001
+      #   - 8883:8883
       networks:
         - traefik_proxy
-        - default
+        #- default      
       labels:
-        - "traefik.enable=false"
+        - "traefik.enable=true"
+        - "traefik.port=9001"
+        - "traefik.backend=mosquitto"
+        - "traefik.frontend.rule=Host:mosquitto.${DOMAINNAME}"
+        - "traefik.protocol=https"
+        - "traefik.docker.network=traefik_proxy"
+        - "traefik.frontend.headers.SSLRedirect=true"
+        - "traefik.frontend.headers.STSSeconds=315360000"
+        - "traefik.frontend.headers.browserXSSFilter=true"
+        - "traefik.frontend.headers.contentTypeNosniff=true"
+        - "traefik.frontend.headers.forceSTSHeader=true"
+        - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+        - "traefik.frontend.headers.STSIncludeSubdomains=true"
+        - "traefik.frontend.headers.STSPreload=true"
+        - "traefik.frontend.headers.frameDeny=true"
+        - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
 I have not yet configured this to be accesible via Traefik, I'm still tweaking that setup. I use OwnTracks to base some automations on where I am, and it posts messages to CloudMQTT, which communicates with Mosquitto. Before I had the reverse proxy setup, none of my home services were available outside my home network, so I needed a middleman for certain things like that. Now that Traefik is running, I don't see a reason to keep using CloudMQTT. I'll update this once I get it setup properly.
 
@@ -685,40 +739,46 @@ I have not yet configured this to be accesible via Traefik, I'm still tweaking t
 Home Assistant is a pretty incredible project that allows you to automate your home. It has integrations for every platform I can think of in the home automation space. I am still very much a beginner with it, but in the `hass-config` folder of this repository, I'll be posting my configuration files and some simple walkthroughs to get you up and running with it.
 
     homeassistant:
-    container_name: home-assistant
-    restart: always
-    image: homeassistant/home-assistant:latest
-    depends_on:
-      - "influxdb"
-      - "traefik"
-    volumes:
-      - ${USERDIR}/hass-config:/config
-      - /etc/localtime:/etc/localtime:ro
-      - ${USERDIR}/hass_media:/media
-    #network_mode: host
-    privileged: true
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    networks:
-      - traefik_proxy
-      - default
-    labels:
-      - "traefik.enable=true"
-      - "traefik.backend=homeassistant"
-      - "traefik.frontend.rule=Host:ha.${DOMAINNAME}"
-      - "traefik.port=8123"
-      - "traefik.docker.network=traefik_proxy"
-      - "traefik.frontend.headers.SSLRedirect=true"
-      - "traefik.frontend.headers.STSSeconds=315360000"
-      - "traefik.frontend.headers.browserXSSFilter=true"
-      - "traefik.frontend.headers.contentTypeNosniff=true"
-      - "traefik.frontend.headers.forceSTSHeader=true"
-      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
-      - "traefik.frontend.headers.STSIncludeSubdomains=true"
-      - "traefik.frontend.headers.STSPreload=true"
-      - "traefik.frontend.headers.frameDeny=true"
+      container_name: home-assistant
+      restart: always
+      image: homeassistant/home-assistant:latest
+      depends_on:
+        - "influxdb"
+        - "traefik"
+      volumes:
+        - ${USERDIR}/hass-config:/config
+        - /etc/localtime:/etc/localtime:ro
+        - ${USERDIR}/hass_media:/media
+      #network_mode: host
+      privileged: true
+      # ports:
+      #   - 8123:8123
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      networks:
+        - traefik_proxy
+        - default
+      labels:
+        - "traefik.enable=true"
+        - "traefik.backend=homeassistant"
+        - "traefik.frontend.rule=Host:ha.${DOMAINNAME}"
+        - "traefik.port=8123"
+        # - "traefik.protocol=https"
+        - "traefik.docker.network=traefik_proxy"
+        - "traefik.frontend.headers.SSLRedirect=true"
+        - "traefik.frontend.headers.STSSeconds=315360000"
+        - "traefik.frontend.headers.browserXSSFilter=true"
+        - "traefik.frontend.headers.contentTypeNosniff=true"
+        - "traefik.frontend.headers.forceSTSHeader=true"
+        - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+        - "traefik.frontend.headers.STSIncludeSubdomains=true"
+        - "traefik.frontend.headers.STSPreload=true"
+        - "traefik.frontend.headers.frameDeny=true"
+        - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+        - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+        - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
 
 ## Node-RED
 
@@ -767,7 +827,7 @@ PiHole is a network-wide ad-blocker. I've got close to a million domains on my b
         - /etc/dnsmasq.d:/etc/dnsmasq.d
       # - ${USERDIR}/pihole/misc/dnsmasq.leases:/var/lib/misc/dnsmasq.leases
       restart: always
-      dns: 
+      dns:
         - 127.0.0.1
         - 1.1.1.1
 
@@ -788,10 +848,11 @@ Duplicati is a very easy to use file backup system. Since I've got a few Samba s
         - PUID=${PUID}
         - PGID=${PGID}
     volumes:
-        - '${USERDIR}/duplicati:/config'
-        - '${USERDIR}/backupOnDesktop:/backups'
-        - '${USERDIR}:/source'
-        - '/etc/localtime:/etc/localtime:ro'
+        - ${USERDIR}/duplicati/config:/config
+        - ${USERDIR}/duplicati/data:/data/Duplicati
+        - ${BACKUP_DIR}/duplicatiBackups:/backups
+        - ${USERDIR}:/source
+        - /etc/localtime:/etc/localtime:ro
 
 The `backupOnDesktop` folder is not on my server, but on my desktop. I'll cover that in the [Samba](#samba) section below.
 
@@ -830,10 +891,27 @@ Organizr is a dashboard for media containers.
         - "traefik.frontend.headers.STSIncludeSubdomains=true"
         - "traefik.frontend.headers.STSPreload=true"
         #- "traefik.frontend.headers.frameDeny=true"
+        - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
 
 ## Bookstack
 
 After installion, the default login is `admin@admin.com` and the password is `password`.
+
+    bookstack:
+      container_name: bookstack
+      image: solidnerd/bookstack
+      depends_on:
+      - mariadb
+      environment:
+      - DB_HOST=mariadb:3306
+      - DB_DATABASE=${BOOKSTACK_DATABASE}
+      - DB_USERNAME=${BOOKSTACK_DATABASE_USERNAME}
+      - DB_PASSWORD=${BOOKSTACK_DATABASE_PASSWORD}
+      volumes:
+      - ${USERDIR}/bookstack/uploads:/var/www/bookstack/public/uploads
+      - ${USERDIR}/bookstack/storage:/var/www/bookstack/public/storage
+      ports:
+      - "8581:80"
 
 ## Samba
 
@@ -874,9 +952,215 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
 
   I have a lot of eBooks, and I like having them accessible from any of my devices. For CalibreWeb, you first need to install Calibre and create a library database.
 
+      calibre-web:
+      image: linuxserver/calibre-web
+      container_name: calibre-web
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      volumes:
+        - ${USERDIR}/calibre/config:/config
+        - ${CALIBRE_MEDIA_PATH}:/books
+      ports:
+        - 8083:8083
+      restart: unless-stopped
+
 ## MariaDB Backup
 
   Now that you've got Bookstack and Nextcloud up and running, you should make sure to backup that data. This container automates that process.
+
+      mariadb-backup:
+      container_name: mariadb-backup
+      image: tiredofit/mariadb-backup
+      links:
+        - mariadb
+      volumes:
+        - ${BACKUP_DIR}/mariadbBackups:/backups
+      environment:
+        - DB_SERVER=mariadb
+        - DB_NAME=${MYSQL_DATABASE}
+        - DB_USER=${MYSQL_ROOT_USER}
+        - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+        - DB_DUMP_FREQ=1440
+        - DB_DUMP_BEGIN=+0002
+        - DB_CLEANUP_TIME=8640
+        - MD5=TRUE
+        - COMPRESSION=XZ
+        - SPLIT_DB=FALSE
+      restart: always
+
+## Netdata
+
+    netdata:
+      image: titpetric/netdata
+      container_name: netdata
+      restart: always
+      networks:
+          - traefik_proxy
+      ports:
+          - 19999:19999
+      volumes:
+          - ${USERDIR}/netdata/proc:/host/proc:ro
+          - ${USERDIR}/netdata/sys:/host/sys:ro
+          - ${USERDIR}/netdata/var/run/docker.sock:/var/run/docker.sock:ro
+
+## Emby
+
+    emby:
+      image: emby/embyserver:latest
+      container_name: emby
+      #network_mode: host
+      ports:
+        - 8096:8096
+        - 8920:8920
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+        - ${USERDIR}/emby:/config
+        - ${EMBY_MEDIA_PATH}:/media
+      environment:
+        #- VIRTUAL_PORT=8096
+        #- VIRTUAL_HOST=emby.htpc
+        - AUTO_UPDATES_ON=true
+        - APP_UID=${PUID}
+        - APP_GID=${PGID}
+      networks:
+        - traefik_proxy
+      labels:
+        - "traefik.enable=true"
+        - "traefik.backend=emby"
+        - "traefik.frontend.rule=Host:emby.${DOMAINNAME}"  
+        #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /emby"
+        - "traefik.port=8920"
+        - "traefik.protocol=https"
+        - "traefik.docker.network=traefik_proxy"
+        - "traefik.frontend.headers.SSLRedirect=true"
+        - "traefik.frontend.headers.STSSeconds=315360000"
+        - "traefik.frontend.headers.browserXSSFilter=true"
+        - "traefik.frontend.headers.contentTypeNosniff=true"
+        - "traefik.frontend.headers.forceSTSHeader=true"
+        - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+        - "traefik.frontend.headers.STSIncludeSubdomains=true"
+        - "traefik.frontend.headers.STSPreload=true"
+        - "traefik.frontend.headers.frameDeny=true"
+        - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+
+## Transmission
+
+    transmission:
+      image: haugene/transmission-openvpn
+      container_name: transmission-openvpn
+      cap_add:
+        - NET_ADMIN
+      devices:
+        - /dev/net/tun
+      restart: always
+      depends_on:
+        - "pihole"
+      ports:
+        - "9091:9091/tcp"
+        - "9090:9090/tcp"
+        - "9091:9091/udp"
+        - "9090:9090/udp"
+      volumes:
+        - /etc/localtime:/etc/localtime:ro
+        - ${USERDIR}/transmission:/data
+        - ${EMBY_MEDIA_PATH}/Downloads:/data/completed
+        - ${EMBY_MEDIA_PATH}/Downloads:/data/incomplete
+        - ${EMBY_MEDIA_PATH}/torrent-files:/data/watch
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - OPENVPN_PROVIDER=${OPENVPN_PROVIDER}
+        - OPENVPN_USERNAME=${OPENVPN_USERNAME}
+        - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
+        - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60
+        - LOCAL_NETWORK=${LOCAL_NETWORK}
+        - TRANSMISSION_RATIO_LIMIT=1.00
+        - TRANSMISSION_RATIO_LIMIT_ENABLED=true
+        - TRANSMISSION_SPEED_LIMIT_UP=1
+        - TRANSMISSION_SPEED_LIMIT_UP_ENABLED=true
+      sysctls:
+        - net.ipv6.conf.all.disable_ipv6=0
+
+## Jackett
+
+    jackett:
+      image: linuxserver/jackett:latest
+      container_name: jackett
+      depends_on:
+        - "transmission-openvpn" 
+      ports:
+        - "9117:9117"
+      volumes:
+          - /${USERDIR}/jackett/config:/config
+          - ${EMBY_MEDIA_PATH}/Downloads:/downloads
+          - /etc/localtime:/etc/localtime:ro
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      # labels:
+      #     - traefik.backend=jackett
+      #     - traefik.frontend.rule=Host:jackett.${DOMAIN}
+      #     - traefik.docker.network=traefik
+      #     - traefik.port=9117
+      networks:
+          - traefik_proxy
+      # expose:
+      #     - 9117
+      restart: always
+
+## Radarr
+
+    radarr:
+    image: linuxserver/radarr:latest
+    container_name: radarr
+    depends_on:
+      - "transmission-openvpn" 
+    ports:
+      - "7878:7878"
+    volumes:
+        - ${USERDIR}/radarr/config:/config
+        - ${EMBY_MEDIA_PATH}/Movies:/movies
+        - ${EMBY_MEDIA_PATH}/Downloads:/downloads
+        - /etc/localtime:/etc/localtime:ro
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    # labels:
+    #     - traefik.backend=radarr
+    #     - traefik.frontend.rule=Host:radarr.${DOMAIN}
+    #     - traefik.docker.network=traefik
+    #     - traefik.port=7878
+    networks:
+        - traefik_proxy
+    # expose:
+    #     - 7878
+    restart: always
+
+## Sonarr
+
+    sonarr:
+      image: linuxserver/sonarr
+      container_name: sonarr
+      restart: always
+      networks:
+          - traefik_proxy
+      ports:
+          - 8989:8989
+      depends_on:
+        - "transmission-openvpn"
+      volumes:
+          - ${USERDIR}/sonarr/config:/config
+          - ${EMBY_MEDIA_PATH/Downloads:/downloads
+          - ${EMBY_MEDIA_PATH}/TV:/tv
+          - /etc/localtime:/etc/localtime:ro
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
 
 ## Next Steps
 
@@ -884,7 +1168,6 @@ I'm always playing around, adjusting things, adding new containers I think I mig
 
 * Set up a few more machines to act as hosts, and convert all of this to a Docker Swarm
 * Cloud backup in Duplicati to Azure or AWS
-* Setup Emby/Plex/Kodi and integrate with Organizr
 * Setup a CI/CD pipeline for my personal website from a self-hosted GitLab instance to AWS or Azure
 * phpIPAM, for IP address management
 * Migrate OpenVPN to a container
