@@ -267,8 +267,6 @@ services:
     networks:
       - default
       - traefik_proxy
-    depends_on:
-      - "pihole"  
     environment:
       - CLOUDFLARE_EMAIL=${CLOUDFLARE_EMAIL}
       - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
@@ -555,7 +553,7 @@ services:
         - ${USERDIR}/netdata/sys:/host/sys:ro
         - ${USERDIR}/netdata/var/run/docker.sock:/var/run/docker.sock:ro
 
-  transmission:
+  transmission-openvpn:
     image: haugene/transmission-openvpn
     container_name: transmission-openvpn
     cap_add:
@@ -618,7 +616,7 @@ services:
       - "transmission-openvpn" 
     volumes:
         - ${USERDIR}/sonarr/config:/config
-        - ${EMBY_MEDIA_PATH/Downloads:/downloads
+        - ${EMBY_MEDIA_PATH}/Downloads:/downloads
         - ${EMBY_MEDIA_PATH}/TV:/tv
         - /etc/localtime:/etc/localtime:ro
     environment:
