@@ -74,12 +74,12 @@ services:
       - MOSQUITTO_USERNAME=${MOSQUITTO_USERNAME}
       - MOSQUITTO_PASSWORD=${MOSQUITTO_PASSWORD}
     ports:
-      - 1883
-      - 9001
+      - "1883:1883"
+      - "9001:9001"
     #   - 8883:8883
     networks:
       - traefik_proxy
-      #- default      
+      #- default
     labels:
       - "traefik.enable=true"
       - "traefik.port=9001"
@@ -97,6 +97,7 @@ services:
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
       - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      
 
   mongo:
     container_name: mongo
@@ -107,18 +108,6 @@ services:
       - /etc/localtime:/etc/localtime:ro
     ports:
       - "27017:27017"
-
-  hadockermon:
-    container_name: ha-dockermon
-    restart: always
-    image: philhawthorne/ha-dockermon:latest
-    depends_on:
-      - "pihole"  
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ${USERDIR}/ha-dockermon:/config
-    ports:
-      - "8126:8126"
 
   influxdb:
     container_name: influxdb
@@ -468,44 +457,6 @@ services:
     ports:
     - "8581:80"
 
-  emby:
-    image: emby/embyserver:latest
-    container_name: emby
-    #network_mode: host
-    ports:
-      - 8096:8096
-      - 8920:8920
-    volumes:
-      - /etc/localtime:/etc/localtime:ro
-      - ${USERDIR}/emby:/config
-      - ${EMBY_MEDIA_PATH}:/media
-    environment:
-      #- VIRTUAL_PORT=8096
-      #- VIRTUAL_HOST=emby.htpc
-      - AUTO_UPDATES_ON=true
-      - APP_UID=${PUID}
-      - APP_GID=${PGID}
-    networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.backend=emby"
-      - "traefik.frontend.rule=Host:emby.${DOMAINNAME}"  
-      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /emby"
-      - "traefik.port=8920"
-      - "traefik.protocol=https"
-      - "traefik.docker.network=traefik_proxy"
-      - "traefik.frontend.headers.SSLRedirect=true"
-      - "traefik.frontend.headers.STSSeconds=315360000"
-      - "traefik.frontend.headers.browserXSSFilter=true"
-      - "traefik.frontend.headers.contentTypeNosniff=true"
-      - "traefik.frontend.headers.forceSTSHeader=true"
-      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
-      - "traefik.frontend.headers.STSIncludeSubdomains=true"
-      - "traefik.frontend.headers.STSPreload=true"
-      - "traefik.frontend.headers.frameDeny=true"
-      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
-
   calibre-web:
     image: linuxserver/calibre-web
     container_name: calibre-web
@@ -515,7 +466,7 @@ services:
       - TZ=${TZ}
     volumes:
       - ${USERDIR}/calibre/config:/config
-      - ${CALIBRE_MEDIA_PATH}:/books
+      - ${MEDIA_PATH}/Books:/books
     ports:
       - 8083:8083
     restart: unless-stopped
@@ -571,9 +522,9 @@ services:
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ${USERDIR}/transmission:/data
-      - ${EMBY_MEDIA_PATH}/Downloads:/data/completed
-      - ${EMBY_MEDIA_PATH}/Downloads:/data/incomplete
-      - ${EMBY_MEDIA_PATH}/torrent-files:/data/watch
+      - ${MEDIA_PATH}/Downloads:/data/completed
+      - ${MEDIA_PATH}/Downloads:/data/incomplete
+      - ${MEDIA_PATH}/torrent-files:/data/watch
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -582,10 +533,10 @@ services:
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60
       - LOCAL_NETWORK=${LOCAL_NETWORK}
-      - TRANSMISSION_RATIO_LIMIT=1.00
+      - TRANSMISSION_RATIO_LIMIT=0.01
       - TRANSMISSION_RATIO_LIMIT_ENABLED=true
       - TRANSMISSION_SPEED_LIMIT_UP=1
-      - TRANSMISSION_SPEED_LIMIT_UP_ENABLED=true
+      - TRANSMISSION_SPEED_LIMIT_UP_ENABLED=false
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
   # proxy:
@@ -611,13 +562,13 @@ services:
     networks:
         - traefik_proxy       
     ports:
-        - 8989:8989
+        - "8989:8989"
     depends_on:
       - "transmission-openvpn" 
     volumes:
         - ${USERDIR}/sonarr/config:/config
-        - ${EMBY_MEDIA_PATH}/Downloads:/downloads
-        - ${EMBY_MEDIA_PATH}/TV:/tv
+        - ${MEDIA_PATH}/Downloads:/downloads
+        - ${MEDIA_PATH}/TV:/tv
         - /etc/localtime:/etc/localtime:ro
     environment:
       - PUID=${PUID}
@@ -633,8 +584,8 @@ services:
       - "7878:7878"
     volumes:
         - ${USERDIR}/radarr/config:/config
-        - ${EMBY_MEDIA_PATH}/Movies:/movies
-        - ${EMBY_MEDIA_PATH}/Downloads:/downloads
+        - ${MEDIA_PATH}/Movies:/movies
+        - ${MEDIA_PATH}/Downloads:/downloads
         - /etc/localtime:/etc/localtime:ro
     environment:
       - PUID=${PUID}
@@ -651,6 +602,24 @@ services:
     #     - 7878
     restart: always
 
+  lidarr:
+    image: linuxserver/lidarr:latest
+    container_name: lidarr
+    depends_on:
+      - "transmission-openvpn"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${USERDIR}/lidarr/config:/config
+      - ${MEDIA_PATH}/Music:/music
+      - ${MEDIA_PATH}/Downloads:/downloads
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "8686:8686"
+    restart: always
+
   jackett:
     image: linuxserver/jackett:latest
     container_name: jackett
@@ -660,7 +629,7 @@ services:
       - "9117:9117"
     volumes:
         - /${USERDIR}/jackett/config:/config
-        - ${EMBY_MEDIA_PATH}/Downloads:/downloads
+        - ${MEDIA_PATH}/Downloads:/downloads
         - /etc/localtime:/etc/localtime:ro
     environment:
       - PUID=${PUID}
@@ -677,7 +646,96 @@ services:
     #     - 9117
     restart: always
 
+  beets:
+    image: linuxserver/beets:latest
+    container_name: beets
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${USERDIR}/beets/config:/config
+      - ${MEDIA_PATH}/Music:/music
+      - ${MEDIA_PATH}/Downloads:/downloads
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "8337:8337"
+    restart: always
 
+  ubooquity:
+    image: linuxserver/ubooquity:latest
+    container_name: ubooquity
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${USERDIR}/ubooquity/config:/config
+      - ${MEDIA_PATH}/Books:/books
+      - ${MEDIA_PATH}/Comics:/comics
+      # - ${MEDIA_PATH}/books:/files
+    ports:
+      - "2202:2202"
+      - "2203:2203"
+    restart: unless-stopped
+
+  lazylibrarian:
+    image: linuxserver/lazylibrarian:latest
+    container_name: lazylibrarian
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${USERDIR}/lazyLibrarian:/config
+      - ${MEDIA_PATH}/Downloads:/downloads
+      - ${MEDIA_PATH}/books:/books
+    ports:
+      - "5299:5299"
+    restart: unless-stopped
+
+  bazarr:
+    image: linuxserver/bazarr:latest
+    container_name: bazarr
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    volumes:
+      - ${USERDIR}bazarr/config:/config
+      - ${MEDIA_PATH}/Movies:/movies
+      - ${MEDIA_PATH}/TV:/tv
+    ports:
+      - "6767:6767"
+    restart: unless-stopped
+
+  plex:
+    container_name: plex
+    image: linuxserver/plex
+    restart: unless-stopped
+    network_mode: host
+    ports:
+      - 32400:32400/tcp
+      # - 3005:3005/tcp
+      # - 8324:8324/tcp
+      # - 32469:32469/tcp
+      # - 1900:1900/udp
+      # - 32410:32410/udp
+      # - 32412:32412/udp
+      # - 32413:32413/udp
+      # - 32414:32414/udp
+    environment:
+      - TZ=${TZ}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - VERSION=docker
+      # - PLEX_CLAIM=<claimToken>
+      # - ADVERTISE_IP=http://<hostIPAddress>:32400/
+    volumes:
+      - ${USERDIR}:/config
+      - ${MEDIA_PATH}/temp:/transcode
+      - ${MEDIA_PATH}/Movies:/data/movies
+      - ${MEDIA_PATH}/TV:/data/tvshows
 
 networks:
   traefik_proxy:

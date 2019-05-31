@@ -26,14 +26,18 @@ Currently, I'm running:
 * [Duplicati](#duplicati) - easiest backup solution I've found
 * [Unbound](#unbound) - stop using Google DNS or Cloudflare and be your own DNS resolver
 * [Bookstack](#bookstack) - a self-hosted wiki. I use it to keep track of all my notes from school and work
-* [CalibreWeb](#calibre-web) - all of my eBooks, accessible from anywhere
 * [MariaDB Backup](#mariadb-backup) - an automated backup for MariaDB
-* [NetData](#netdata) - network monitoring
-* [Emby](#emby) - a media server, with apps for Roku, Android, iPhone, and more
+* [NetData](#netdata) - network monitoring, server status dashboard, pretty convenient
+* [Plex](#plex) - a media server, with apps for Roku, Android, iPhone, and more
 * [Transmission/OpenVPN](#transmission) - a torrent client, we'll be using a VPN with it
 * [Jackett](#jackett) - a helpful wrapper for Radarr and Sonarr
 * [Radarr](#radarr) - an automated way to find and download movies via torrent or newsgroup
-* [Sonarr](#sonarr) - like Radarr, but for TV shows - add a show to your wanted list and episodes will show up in Emby as they get downloaded
+* [Sonarr](#sonarr) - like Radarr, but for TV shows - add a show to your wanted list and episodes will show up in Plex as they get downloaded
+* [Lidarr](#lidarr) - the cousin of radarr/sonarr, lidarr is for finding and downloading music
+* [Bazarr](#bazarr) - automatically fetch subtitles for your Movies and TV shows
+* [Beets](#beets) - to keep your music tagged properly
+* [Ubooquity](#ubooquity) - ebook manager
+* [LazyLibrarian](#lazylibrarian) - ebook metadata manager
 
 as containers, and my server has a [Samba](#samba) share set up to allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for [Duplicati](#duplicati) backups.
 
@@ -48,13 +52,14 @@ As far as devices, I'm using:
   * Outlets
   * Motion Detectors
 * Sylvania ZigBee Outlets
-* Yi Home Cams
+* Yi Home Cams - I use a non-stock firmware, [Yi-Hack v4](https://github.com/TheCrypt0/yi-hack-v4)
 * Assorted Raspberry Pi models 2 and 3 - some with temperature and light sensors, one as a wall-mounted touchscreen to act as a control panel for Home Assistant
 * Samsung Galaxy Tab S - also a wall-mounted control panel, also has a few sensors I use
 * Roku
 * Chromecast
-* Router running DD-WRT
+* Router running [DD-WRT](https://dd-wrt.com/)
 * Nest Thermostat
+* MediaSonic NAS box - I don't use the raid features, instead I use [mergerfs](https://github.com/trapexit/mergerfs) running on my server to manage my storage situation
 
 The SmartThings hub only seems to work when the phase of the moon is just right, and if I had to do it over, I would go with a different platform.
 
@@ -74,7 +79,6 @@ Then log out and back in. If you can `docker run hello-world` without needing `s
 `sudo chown "$USER":"$USER" /home/"$USER"/.docker -R`  
 `sudo chmod g+rwx "$HOME/.docker" -R`  
 
-
 Next, configure Docker to run on start up:  
 
 `sudo systemctl enable docker`
@@ -89,39 +93,39 @@ modifying the version number to whatever is most recent. Next, create a docker n
 
 Then create a file, `.env`, which will store all the things you'd like to keep secret.
 
->PUID=  
-PGID=  
-TZ=  
-USERDIR=   
-MYSQL_ROOT_PASSWORD=  
-MYSQL_PASSWORD=  
-MYSQL_USER=  
-MYSQL_DATABASE=  
-HTTP_USERNAME=  
-HTTP_PASSWORD=  
-DOMAINNAME=  
-CLOUDFLARE_EMAIL=  
-CLOUDFLARE_API_KEY=  
-PIHOLE_PASSWORD=  
-LOCAL_IP=  
-BACKUPPC_ADMIN_USER=  
-BACKUPPC_ADMIN_PASS=  
-BACKUPPC_ADMIN_USER=  
-BACKUPPC_ADMIN_PASS=  
-BOOKSTACK_DATABASE=  
-BOOKSTACK_DATABASE_USERNAME=  
-BOOKSTACK_DATABASE_PASSWORD=  
-PHPIPAM_USER=  
-PHPIPAM_PASSWORD=  
-PHPIPAM_DATABASE=  
-EMBY_MEDIA_PATH=  
-CALIBRE_MEDIA_PATH=  
-MOSQUITTO_USERNAME=  
-MOSQUITTO_PASSWORD=  
-OPENVPN_PROVIDER=  
-OPENVPN_USERNAME=  
-OPENVPN_PASSWORD=  
-LOCAL_NETWORK=  
+>BACKUPPC_ADMIN_PASS=
+BACKUPPC_ADMIN_USER=
+BACKUP_DIR=
+BOOKSTACK_DATABASE=
+BOOKSTACK_DATABASE_PASSWORD=
+BOOKSTACK_DATABASE_USERNAME=
+CLOUDFLARE_API_KEY=
+CLOUDFLARE_EMAIL=
+DOMAINNAME=
+HTTP_PASSWORD=
+HTTP_USERNAME=
+LOCAL_IP=
+LOCAL_NETWORK=
+MEDIA_PATH=
+MOSQUITTO_PASSWORD=
+MOSQUITTO_USERNAME=
+MYSQL_DATABASE=
+MYSQL_ROOT_PASSWORD=
+MYSQL_ROOT_USER=
+NEXTCLOUD_DATABASE=
+NEXTCLOUD_DB_PASSWORD=
+NEXTCLOUD_DB_USER=
+OPENVPN_PASSWORD=
+OPENVPN_PROVIDER=
+OPENVPN_USERNAME=
+PGID=
+PHPIPAM_DATABASE=
+PHPIPAM_PASSWORD=
+PHPIPAM_USER=
+PIHOLE_PASSWORD=
+PUID=
+TZ=
+USERDIR=  
 
 `PUID` and `PGID` can be found on your system by running `id $user`.  
 `TZ` is your current time zone  
@@ -854,7 +858,7 @@ Duplicati is a very easy to use file backup system. Since I've got a few Samba s
         - ${USERDIR}:/source
         - /etc/localtime:/etc/localtime:ro
 
-The `backupOnDesktop` folder is not on my server, but on my desktop. I'll cover that in the [Samba](#samba) section below.
+The `BACKUP_DIR` folder is not on my server, but on my desktop. I'll cover that in the [Samba](#samba) section below.
 
 ## Organizr
 
@@ -948,29 +952,11 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
   you're telling your ISP where you're trying to go. You're also giving them the opportunity to inject ads and track your behavior online. Switching to a different DNS proivder
   means you're now placing your trust in them instead of your ISP. Why not cut out the middle-server and be your own DNS resolver? Unbound allows you to do that.
 
-## Calibre Web
-
-  I have a lot of eBooks, and I like having them accessible from any of my devices. For CalibreWeb, you first need to install Calibre and create a library database.
-
-      calibre-web:
-      image: linuxserver/calibre-web
-      container_name: calibre-web
-      environment:
-        - PUID=${PUID}
-        - PGID=${PGID}
-        - TZ=${TZ}
-      volumes:
-        - ${USERDIR}/calibre/config:/config
-        - ${CALIBRE_MEDIA_PATH}:/books
-      ports:
-        - 8083:8083
-      restart: unless-stopped
-
 ## MariaDB Backup
 
   Now that you've got Bookstack and Nextcloud up and running, you should make sure to backup that data. This container automates that process.
 
-      mariadb-backup:
+    mariadb-backup:
       container_name: mariadb-backup
       image: tiredofit/mariadb-backup
       links:
@@ -1005,45 +991,35 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
           - ${USERDIR}/netdata/sys:/host/sys:ro
           - ${USERDIR}/netdata/var/run/docker.sock:/var/run/docker.sock:ro
 
-## Emby
+## Plex
 
-    emby:
-      image: emby/embyserver:latest
-      container_name: emby
-      #network_mode: host
+    plex:
+      container_name: plex
+      image: linuxserver/plex
+      restart: unless-stopped
+      network_mode: host
       ports:
-        - 8096:8096
-        - 8920:8920
-      volumes:
-        - /etc/localtime:/etc/localtime:ro
-        - ${USERDIR}/emby:/config
-        - ${EMBY_MEDIA_PATH}:/media
+        - 32400:32400/tcp
+        # - 3005:3005/tcp
+        # - 8324:8324/tcp
+        # - 32469:32469/tcp
+        # - 1900:1900/udp
+        # - 32410:32410/udp
+        # - 32412:32412/udp
+        # - 32413:32413/udp
+        # - 32414:32414/udp
       environment:
-        #- VIRTUAL_PORT=8096
-        #- VIRTUAL_HOST=emby.htpc
-        - AUTO_UPDATES_ON=true
-        - APP_UID=${PUID}
-        - APP_GID=${PGID}
-      networks:
-        - traefik_proxy
-      labels:
-        - "traefik.enable=true"
-        - "traefik.backend=emby"
-        - "traefik.frontend.rule=Host:emby.${DOMAINNAME}"  
-        #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /emby"
-        - "traefik.port=8920"
-        - "traefik.protocol=https"
-        - "traefik.docker.network=traefik_proxy"
-        - "traefik.frontend.headers.SSLRedirect=true"
-        - "traefik.frontend.headers.STSSeconds=315360000"
-        - "traefik.frontend.headers.browserXSSFilter=true"
-        - "traefik.frontend.headers.contentTypeNosniff=true"
-        - "traefik.frontend.headers.forceSTSHeader=true"
-        - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
-        - "traefik.frontend.headers.STSIncludeSubdomains=true"
-        - "traefik.frontend.headers.STSPreload=true"
-        - "traefik.frontend.headers.frameDeny=true"
-        - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+        - TZ=${TZ}
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - VERSION=docker
+        # - PLEX_CLAIM=<claimToken>
+        # - ADVERTISE_IP=http://<hostIPAddress>:32400/
+      volumes:
+        - ${USERDIR}:/config
+        - ${MEDIA_PATH}/temp:/transcode
+        - ${MEDIA_PATH}/Movies:/data/movies
+        - ${MEDIA_PATH}/TV:/data/tvshows
 
 ## Transmission
 
@@ -1114,31 +1090,31 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
 ## Radarr
 
     radarr:
-    image: linuxserver/radarr:latest
-    container_name: radarr
-    depends_on:
-      - "transmission-openvpn" 
-    ports:
-      - "7878:7878"
-    volumes:
-        - ${USERDIR}/radarr/config:/config
-        - ${EMBY_MEDIA_PATH}/Movies:/movies
-        - ${EMBY_MEDIA_PATH}/Downloads:/downloads
-        - /etc/localtime:/etc/localtime:ro
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    # labels:
-    #     - traefik.backend=radarr
-    #     - traefik.frontend.rule=Host:radarr.${DOMAIN}
-    #     - traefik.docker.network=traefik
-    #     - traefik.port=7878
-    networks:
-        - traefik_proxy
-    # expose:
-    #     - 7878
-    restart: always
+      image: linuxserver/radarr:latest
+      container_name: radarr
+      depends_on:
+        - "transmission-openvpn" 
+      ports:
+        - "7878:7878"
+      volumes:
+          - ${USERDIR}/radarr/config:/config
+          - ${EMBY_MEDIA_PATH}/Movies:/movies
+          - ${EMBY_MEDIA_PATH}/Downloads:/downloads
+          - /etc/localtime:/etc/localtime:ro
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      # labels:
+      #     - traefik.backend=radarr
+      #     - traefik.frontend.rule=Host:radarr.${DOMAIN}
+      #     - traefik.docker.network=traefik
+      #     - traefik.port=7878
+      networks:
+          - traefik_proxy
+      # expose:
+      #     - 7878
+      restart: always
 
 ## Sonarr
 
@@ -1162,6 +1138,97 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
         - PGID=${PGID}
         - TZ=${TZ}
 
+## Lidarr
+
+    lidarr:
+      image: linuxserver/lidarr:latest
+      container_name: lidarr
+      depends_on:
+        - "transmission-openvpn"
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      volumes:
+        - ${USERDIR}/lidarr/config:/config
+        - ${MEDIA_PATH}/Music:/music
+        - ${MEDIA_PATH}/Downloads:/downloads
+        - /etc/localtime:/etc/localtime:ro
+      ports:
+        - "8686:8686"
+      restart: always
+
+## Bazarr
+
+    bazarr:
+      image: linuxserver/bazarr:latest
+      container_name: bazarr
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      volumes:
+        - ${USERDIR}bazarr/config:/config
+        - ${MEDIA_PATH}/Movies:/movies
+        - ${MEDIA_PATH}/TV:/tv
+      ports:
+        - "6767:6767"
+      restart: unless-stopped
+
+## Beets
+
+    beets:
+      image: linuxserver/beets:latest
+      container_name: beets
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      volumes:
+        - ${USERDIR}/beets/config:/config
+        - ${MEDIA_PATH}/Music:/music
+        - ${MEDIA_PATH}/Downloads:/downloads
+        - /etc/localtime:/etc/localtime:ro
+      ports:
+        - "8337:8337"
+      restart: always
+
+## Ubooquity
+
+    ubooquity:
+      image: linuxserver/ubooquity:latest
+      container_name: ubooquity
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      volumes:
+        - ${USERDIR}/ubooquity/config:/config
+        - ${MEDIA_PATH}/Books:/books
+        - ${MEDIA_PATH}/Comics:/comics
+        # - ${MEDIA_PATH}/books:/files
+      ports:
+        - "2202:2202"
+        - "2203:2203"
+      restart: unless-stopped
+
+## LazyLibrarian
+
+  lazylibrarian:
+      image: linuxserver/lazylibrarian:latest
+      container_name: lazylibrarian
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+      volumes:
+        - ${USERDIR}/lazyLibrarian:/config
+        - ${MEDIA_PATH}/Downloads:/downloads
+        - ${MEDIA_PATH}/books:/books
+      ports:
+        - "5299:5299"
+      restart: unless-stopped
+
 ## Next Steps
 
 I'm always playing around, adjusting things, adding new containers I think I might use, tweaking the ones I have. Some things on my list:
@@ -1169,6 +1236,5 @@ I'm always playing around, adjusting things, adding new containers I think I mig
 * Set up a few more machines to act as hosts, and convert all of this to a Docker Swarm
 * Cloud backup in Duplicati to Azure or AWS
 * Setup a CI/CD pipeline for my personal website from a self-hosted GitLab instance to AWS or Azure
-* phpIPAM, for IP address management
 * Migrate OpenVPN to a container
 * Container health checks

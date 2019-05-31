@@ -29,3 +29,5 @@ ip_bans.yaml
 .google*
 .spotify*
 .uuid
+
+smb.conf
