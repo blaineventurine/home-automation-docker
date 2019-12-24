@@ -1,17 +1,20 @@
 homeassistant:
-  # Name of the location where Home Assistant is running
   name: Home
-  # Location required to calculate the time the sun rises and sets
   latitude: !secret latitude
   longitude: !secret longitude
   # Impacts weather/sunrise data (altitude above sea level in meters)
-  elevation: 0
-  # metric for Metric, imperial for Imperial
+  elevation: 620
   unit_system: imperial
   # Pick yours from here: http://en.wikipedia.org/wiki/List_of_tz_database_time_zones
   time_zone: America/Chicago
   # Customization file
   customize: !include customize.yaml
+  auth_providers:
+    - type: trusted_networks
+      trusted_networks:
+        - 127.0.0.1
+        - !secret trusted_network_1
+    - type: homeassistant
 
 # Enables the frontend
 frontend:
@@ -23,15 +26,13 @@ config:
 
 system_health:
 
+notify:
+
+mobile_app:
+
 # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
- http:
+http:
   base_url: !secret base_url
-  trusted_networks:
-    - 127.0.0.1
-    - !secret trusted_network_1
-  #server_port: 8123
-#  ssl_certificate: "/ssl/fullchain.pem"
-#  ssl_key: "/ssl/privkey.pem"
 
 # Discover some devices automatically
 discovery:
@@ -59,6 +60,8 @@ tts:
 # Cloud
 cloud:
 
+mobile_app:
+
 mqtt:
   broker: !secret local_ip
   port: 1883
@@ -69,11 +72,6 @@ mqtt:
 
 sensor:
   - platform: moon
-
-  - platform: haveibeenpwned
-    email: 
-      - !secret pwned_email_1
-      - !secret pwned_email_2
 
   - platform: darksky
     api_key: !secret darksky_api_key
@@ -86,10 +84,10 @@ sensor:
     monitored_conditions:
   #     - icon
   #     - summary
-  #     - humidity
+      - humidity
       - temperature
   #     - apparent_temperature
-  #     - precip_probability
+      - precip_probability
   #     - pressure
     scan_interval:
       minutes: 5
@@ -105,60 +103,6 @@ sensor:
     state_topic: "pi-one/humidity"
     unit_of_measurement: '%'
     #value_template: "{{ value_json.humidity }}"
-  
-  - platform: mqtt
-    name: "Front Door Temperature"
-    state_topic: "smartthings/Front Door Sensor/temperature"
-    unit_of_measurement: '°F'
-    #retain: true
-  - platform: mqtt
-    name: "Front Door Contact Battery"
-    state_topic: "smartthings/Front DoorSensor/battery"
-    unit_of_measurement: '%'
-    #retain: true
-  - platform: mqtt
-    name: "Kitchen Door Temperature"
-    state_topic: "smartthings/Kitchen Door Sensor/temperature"
-    unit_of_measurement: '°F'
-    #retain: true
-  - platform: mqtt
-    name: "Kitchen Door Contact Battery"
-    state_topic: "smartthings/Kitchen Door Sensor/battery"
-    unit_of_measurement: '%'
-    #retain: true
-  
-  - platform: mqtt
-    name: "Tablet Light Sensor"
-    state_topic: "wallpanel/sensor/light"
-    unit_of_measurement: "lx"
-    #retain: true
-    value_template: "{{ value_json.value }}"
-  
-  - platform: mqtt
-    name: "Office Motion Sensor Temperature"
-    state_topic: "smartthings/Motion Sensor/temperature"
-    unit_of_measurement: '°F'
-    #retain: true
-
-binary_sensor:
-  - platform: mqtt
-    name: "Kitchen Door Contact"
-    state_topic: "smartthings/Kitchen Door Sensor/contact"
-    payload_on: "open"
-    payload_off: "closed"
-    device_class: opening
-  - platform: mqtt
-    name: "Front Door Contact"
-    state_topic: "smartthings/Front Door Sensor/contact"
-    payload_on: "open"
-    payload_off: "closed"
-    device_class: opening
-  - platform: mqtt
-    name: "Office Motion Sensor"
-    state_topic: "smartthings/Motion Sensor/motion"
-    payload_on: "active"
-    payload_off: "inactive"
-    
 
 nest:
   client_id: !secret nest_client_id
@@ -173,37 +117,16 @@ hue:
   bridges:
     - host: !secret hue_bridge_ip
       allow_unreachable: true
-      allow_hue_groups: true
-
-switch:
-  - platform: mqtt
-    name: KitchenTableOutlet
-    state_topic: "smartthings/Kitchen Table Outlet/switch"
-    command_topic: "smartthings/Kitchen Table Outlet/switch"
-    payload_on: "on"
-    payload_off: "off"
-    #retain: true
-  - platform: mqtt
-    name: OfficeOutlet
-    state_topic: "smartthings/Office Outlet/switch"
-    command_topic: "smartthings/Office Outlet/switch"
-    payload_on: "on"
-    payload_off: "off"
-    #retain: true
-  - platform: mqtt
-    name: StoveOutlet
-    state_topic: "smartthings/Stove Outlet/switch"
-    command_topic: "smartthings/Stove Outlet/switch"
-    payload_on: "on"
-    payload_off: "off"
-    #retain: true
+      # allow_hue_groups: true
 
 stream:
+
 ffmpeg:
+
 camera:
   - platform: ffmpeg
     name: LivingRoomCamera-front
-    input: -rtsp_transport tcp -i rtsp://10.15.22.27/ch0_0.h264
+    input: !secret livingRoomCamera-front_rtsp
     # host: !secret living_room_camera_front_ip
     # password: !secret camera_password
     # ffmpeg_arguments: -s 800x450
@@ -214,15 +137,11 @@ camera:
   #   password: !secret camera_password
   #   ffmpeg_arguments: -s 800x450
 
-# device_tracker:
-#   - platform: google_maps
-#     username: !secret google_tracker_username
-#     password: !secret google_tracker_password
-
 device_tracker:
-  - platform: owntracks
-    max_gps_accuracy: 200
-    mqtt_topic: !secret owntracks_mqtt_topic
+  - platform: ddwrt
+    host: !secret router_ip
+    username: !secret router_username
+    password: !secret router_password
 
 influxdb:
   host: !secret local_ip
@@ -237,9 +156,9 @@ media_player:
   - platform: spotify
     client_id: !secret spotify_client_id
     client_secret: !secret spotify_client_secret
-  - platform: emby
-    host: !secret local_ip
-    api_key: !secret emby_key
+  - platform: plex
+    ip_address: !secret local_ip
+    port: 32400
   
 roku:
   - host: !secret roku_ip
@@ -262,6 +181,67 @@ tplink:
    switch:
     - host: !secret window_light_switch_ip
     - host: !secret dining_room_switch_ip
+
+vacuum:
+  - platform: roomba
+    host: !secret roomba_ip
+    username: !secret roomba_blid
+    password: !secret roomba_password
+
+# Lovelace won't properly toggle icons for groups, this is a workaround
+switch:
+  - platform: template
+    switches:
+        office_lights:
+          value_template: "{{ is_state('group.office_lights','on') }}"
+          turn_on:
+            service: homeassistant.turn_on
+            data:
+              entity_id: group.office_lights
+          turn_off:
+            service: homeassistant.turn_off
+            data:
+              entity_id: group.office_lights
+        kitchen_lights:
+          value_template: "{{ is_state('group.kitchen_lights','on') }}"
+          turn_on:
+            service: homeassistant.turn_on
+            data:
+              entity_id: group.kitchen_lights
+          turn_off:
+            service: homeassistant.turn_off
+            data:
+              entity_id: group.kitchen_lights
+        living_room_lights:
+          value_template: "{{ is_state('group.living_room_lights','on') }}"
+          turn_on:
+            service: homeassistant.turn_on
+            data:
+              entity_id: group.living_room_lights
+          turn_off:
+            service: homeassistant.turn_off
+            data:
+              entity_id: group.living_room_lights
+        dining_room_lights:
+          value_template: "{{ is_state('group.dining_room_lights','on') }}"
+          turn_on:
+            service: homeassistant.turn_on
+            data:
+              entity_id: group.dining_room_lights
+          turn_off:
+            service: homeassistant.turn_off
+            data:
+              entity_id: group.dining_room_lights
+        bedroom_lights:
+          value_template: "{{ is_state('group.bedroom_lights','on') }}"
+          turn_on:
+            service: homeassistant.turn_on
+            data:
+              entity_id: group.bedroom_lights
+          turn_off:
+            service: homeassistant.turn_off
+            data:
+              entity_id: group.bedroom_lights
 
 group: !include groups.yaml
 automation: !include automations.yaml

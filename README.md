@@ -6,38 +6,41 @@ These are all the containers I have running at home. Everything is run behind a 
 
 Currently, I'm running:
 
-* [Traefik](#traefik) - a reverse proxy with https thanks to Let's Encrypt
-* [Home Assistant](#home-assistant) - an amazing home automation program, integrates with nearly everything
-* [PiHole](#pihole) - network-wide ad-blocking. I have close to a million domains on my blocklist, which works out to be about 55% of queries
-* [Organizr](#organizr) - a dashboard for primarily media containers
-* [Portainer](#portainer) - an easy GUI to manage docker containers
-* [Mosquitto](#mosquitto) - an MQTT server
-* [MongoDB](#mongodb) - a database I no longer use and will probably remove
-* [InfluxDB](#influxdb) - Influx is the database I use to keep track of Home Assistant data, all the data from my sensors gets recorded here
-* [Grafana](#grafana) - Grafana allows you to create data-visualization dashboards from InfluxDB data
-* [Chronograf](#chronograf) - essentially the UI to InfluxDB
-* [Node-RED](#node-red) - simplifies automation flows, a graphical way to build automations
-* ~~[MQTTBridge](#mqtt-bridge) - to make Samsung SmartThings post to MQTT topics~~ possibly not needed any more thanks to a Home Assistant update, still working on this
-* [Fail2Ban](#fail2ban) - blocks IP addresses after a certain amount of failed login attempts
-* [Nextcloud](#nextlcoud) - kind of like Google Drive, but better
-* [MariaDB](#mariadb) - a drop-in replacement for MySQL, used as the DB for Nextcloud and a few other things
-* [PHPMyAdmin](#phpmyadmin) - a frontend for MariaDB
-* [Watchtower](#watchtower) - automatically updates docker containers
-* [Duplicati](#duplicati) - easiest backup solution I've found
-* [Unbound](#unbound) - stop using Google DNS or Cloudflare and be your own DNS resolver
-* [Bookstack](#bookstack) - a self-hosted wiki. I use it to keep track of all my notes from school and work
-* [MariaDB Backup](#mariadb-backup) - an automated backup for MariaDB
-* [NetData](#netdata) - network monitoring, server status dashboard, pretty convenient
-* [Plex](#plex) - a media server, with apps for Roku, Android, iPhone, and more
-* [Transmission/OpenVPN](#transmission) - a torrent client, we'll be using a VPN with it
-* [Jackett](#jackett) - a helpful wrapper for Radarr and Sonarr
-* [Radarr](#radarr) - an automated way to find and download movies via torrent or newsgroup
-* [Sonarr](#sonarr) - like Radarr, but for TV shows - add a show to your wanted list and episodes will show up in Plex as they get downloaded
-* [Lidarr](#lidarr) - the cousin of radarr/sonarr, lidarr is for finding and downloading music
 * [Bazarr](#bazarr) - automatically fetch subtitles for your Movies and TV shows
 * [Beets](#beets) - to keep your music tagged properly
-* [Ubooquity](#ubooquity) - ebook manager
+* [Bookstack](#bookstack) - a self-hosted wiki. I use it to keep track of all my notes from school and work
+* [Chronograf](#chronograf) - essentially the UI to InfluxDB
+* [Duplicati](#duplicati) - easiest backup solution I've found
+* [Fail2Ban](#fail2ban) - blocks IP addresses after a certain amount of failed login attempts
+* [Firefly iii](#fireflyiii) - budgeting software
+* [Grafana](#grafana) - Grafana allows you to create data-visualization dashboards from InfluxDB data
+* [Home Assistant](#home-assistant) - an amazing home automation program, integrates with nearly everything
+* [InfluxDB](#influxdb) - Influx is the database I use to keep track of Home Assistant data, all the data from my sensors gets recorded here
+* [Jackett](#jackett) - a helpful wrapper for Radarr and Sonarr
 * [LazyLibrarian](#lazylibrarian) - ebook metadata manager
+* [Lidarr](#lidarr) - the cousin of radarr/sonarr, lidarr is for finding and downloading music
+* [MariaDB Backup](#mariadb-backup) - an automated backup for MariaDB
+* [MariaDB](#mariadb) - a drop-in replacement for MySQL, used as the DB for Nextcloud and a few other things
+* [MongoDB](#mongodb) - a database I no longer use and will probably remove
+* [Monica](#monica) - personal CRM
+* [Mosquitto](#mosquitto) - an MQTT server
+* [NetData](#netdata) - network monitoring, server status dashboard, pretty convenient
+* [Nextcloud](#nextlcoud) - kind of like Google Drive, but better
+* [Node-RED](#node-red) - simplifies automation flows, a graphical way to build automations
+* [Ombi](#ombi) - allows Plex users to request content, centralizes media searching
+* [Organizr](#organizr) - a dashboard for primarily media containers
+* [PHPMyAdmin](#phpmyadmin) - a frontend for MariaDB
+* [PiHole](#pihole) - network-wide ad-blocking. I have close to a million domains on my blocklist, which works out to be about 55% of queries
+* [Plex](#plex) - a media server, with apps for Roku, Android, iPhone, and more
+* [Portainer](#portainer) - an easy GUI to manage docker containers
+* [Radarr](#radarr) - an automated way to find and download movies via torrent or newsgroup
+* [Sonarr](#sonarr) - like Radarr, but for TV shows - add a show to your wanted list and episodes will show up in Plex as they get downloaded
+* [Traefik](#traefik) - a reverse proxy with https thanks to Let's Encrypt
+* [Transmission/OpenVPN](#transmission) - a torrent client, we'll be using a VPN with it
+* [Ubooquity](#ubooquity) - ebook manager
+* [Watchtower](#watchtower) - automatically updates docker containers
+* ~[Unbound](#unbound) - stop using Google DNS or Cloudflare and be your own DNS resolver~ not working well with PiHole, work in progress
+* ~~[MQTTBridge](#mqtt-bridge) - to make Samsung SmartThings post to MQTT topics~~ possibly not needed any more thanks to a Home Assistant update, still working on this
 
 as containers, and my server has a [Samba](#samba) share set up to allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for [Duplicati](#duplicati) backups.
 
@@ -60,6 +63,7 @@ As far as devices, I'm using:
 * Router running [DD-WRT](https://dd-wrt.com/)
 * Nest Thermostat
 * MediaSonic NAS box - I don't use the raid features, instead I use [mergerfs](https://github.com/trapexit/mergerfs) running on my server to manage my storage situation
+* Roomba vacuum
 
 The SmartThings hub only seems to work when the phase of the moon is just right, and if I had to do it over, I would go with a different platform.
 
@@ -835,6 +839,13 @@ PiHole is a network-wide ad-blocker. I've got close to a million domains on my b
         - 127.0.0.1
         - 1.1.1.1
 
+Some devices (I'm looking at you, Chromecast) will not respect your DNS resolver choice and will use a built-in one (8.8.8.8, Google's upstream resolver) instead. You will need to use a firewall to direct all traffic through the PiHole first, and then check it with `Resolve-DnsName -name aaxads.com -Server 8.8.8.8` in Powershell or `dig @8.8.8.8 aaxads.com` in Linux.
+
+In DD-WRT, I have
+
+    iptables -t nat -I PREROUTING -i br0 -p udp --dport 53 -j DNAT --to <IP of PiHole host machine>:53
+    iptables -t nat -I PREROUTING -i br0 -p udp -s <IP of PiHole host machine> --dport 53 -j ACCEPT
+
 When you get it up and running, [this](https://discourse.pi-hole.net/t/update-the-best-blocking-lists-for-the-pi-hole-dns-ad-blockers-interesting-combination/13620) is a good place to start looking for information on blocklists.
 
 ## Duplicati
@@ -951,7 +962,18 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
   When you type an address into a web browser or click a link on a page (unless you've changed your settings to use Quad9, Google, Cloudflare, etc),
   you're telling your ISP where you're trying to go. You're also giving them the opportunity to inject ads and track your behavior online. Switching to a different DNS proivder
   means you're now placing your trust in them instead of your ISP. Why not cut out the middle-server and be your own DNS resolver? Unbound allows you to do that.
+  
+  Let's start of with creating a separate docker network:
 
+  `docker network create --driver=bridge --subnet=192.168.1.0/24 pihole_unbound`  
+
+  And append
+
+    `pihole_unbound:
+    external: true`
+  
+  To your `Networks` section of the compose file.
+  
 ## MariaDB Backup
 
   Now that you've got Bookstack and Nextcloud up and running, you should make sure to backup that data. This container automates that process.

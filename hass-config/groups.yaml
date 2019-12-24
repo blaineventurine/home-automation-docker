@@ -1,0 +1,37 @@
+kitchen_lights:
+  name: Kitchen Lights
+  entities:
+    - light.kitchen_light_1
+    - light.kitchen_light_2
+    - light.kitchen_light_3
+    - light.kitchen_light_4
+    - light.kitchen_sink
+    - switch.kitchen_table_outlet
+office_lights:
+  name: Office Lights
+  all: false
+  entities:
+    - light.office_1
+    - light.office_2
+    - switch.office_floor_lamp
+dining_room_lights:
+  name: Dinning Room Lights
+  entities:
+    - switch.window_lamp
+    - switch.dining_room_light
+living_room_lights:
+  name: Living Room Lights
+  entities:
+    - light.tv_light
+    - light.couch_light
+    - switch.living_room_outlet
+bedroom_lights:
+  name: Bedroom Lights
+  entities:
+    - light.beccas_nightstand
+    - light.blaines_nightstand
+all_people:
+  name: All People
+  entities:
+    - person.becca
+    - person.blaine

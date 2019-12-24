@@ -41,3 +41,4 @@ Dark - Green:
   ### Table row ###
   table-row-background-color: var(--primary-background-color)
   table-row-alternative-background-color: var(--secondary-background-color)
+  card-background-color: "var(--paper-card-background-color)"

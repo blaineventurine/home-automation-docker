@@ -31,3 +31,55 @@
   - service: light.turn_off
     data:
       entity_id: light.porch_light
+
+- alias: 'Turn off living room couch light at 1 am'
+  trigger:
+    platform: time
+    at: "01:00:00"
+  action:
+  - service: light.turn_off
+    data:
+      entity_id:
+        - light.couch_light
+
+- alias: 'Roomba bin full'
+  trigger:
+    platform: template
+    value_template: "{%if is_state_attr('vacuum.roomba', 'bin_full', true) %}true{%endif%}"
+  action:
+  - service: notify.mobile_app_blaines_phone
+    data:
+      message: 'Roomba bin is full, please empty it'
+
+- alias: 'Roomba is stuck'
+  trigger:
+    platform: template
+    value_template: "{%if is_state_attr('vacuum.roomba', 'status', 'Stuck') %}true{%endif%}"
+  action:
+  - service: notify.mobile_app_blaines_phone
+    data:
+      message: 'Roomba got stuck'
+
+- alias: Start Roomba while we are away
+  trigger:
+     platform: state
+     entity_id: group.all_people
+     from: 'home'
+     to: 'not_home'
+     for:
+      hours: 1
+  condition:
+    condition: and
+    conditions:      
+     - condition: time  
+       after: '10:00:00'
+       before: '18:00:00'     
+     - condition: template
+       value_template: '{{ as_timestamp(now()) - as_timestamp(states.automation.start_roomba_while_we_are_away.attributes.last_triggered) | int > 172800 }}'
+  action:
+    - service: vacuum.turn_on
+      data:
+       entity_id: vacuum.roomba
+
+
+

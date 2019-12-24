@@ -4,6 +4,8 @@ services:
   pihole:
     image: pihole/pihole:latest
     container_name: pihole
+    # links:
+    #   - unbound
     ports:
       - "${LOCAL_IP}:53:53/tcp"
       - "${LOCAL_IP}:53:53/udp"
@@ -14,24 +16,94 @@ services:
       - NET_ADMIN
     depends_on:
       - traefik
+      # - unbound
     environment:
       ServerIP: ${LOCAL_IP}
       WEBPASSWORD: ${PIHOLE_PASSWORD}
       VIRTUAL_PORT: 80
+      # DNS1: 192.168.1.2#5322
+      # DNS1: ${LOCAL_IP}#5322
+      DNS1: 1.1.1.1
+      DNS2: "no"
+      IPv6: "no"
+      TZ: ${TZ}
+      # PROXY_LOCATION: pihole
     volumes:
       - ${USERDIR}/pihole:/etc/pihole
       # make sure to manually create this log file before first run
       - ${USERDIR}/pihole/log/pihole.log:/var/log/pihole.log
       - /etc/dnsmasq.d:/etc/dnsmasq.d
      # - ${USERDIR}/pihole/misc/dnsmasq.leases:/var/lib/misc/dnsmasq.leases
+     # - ${USERDIR}/pihole/dnsmasq.d/:/etc/dnsmasq.d/
     restart: always
-    dns: 
+    dns:
       - 127.0.0.1
       - 1.1.1.1
+    # networks:
+    #   pihole_unbound:
+    #     ipv4_address: 192.168.1.3
+    #   default:
+
+  # unbound:
+  #   container_name: unbound
+  #   image: mvance/unbound
+  #   depends_on:
+  #     - pihole
+  #   networks:
+  #     pihole_unbound:
+  #       ipv4_address: 192.168.1.2
+  #   ports:
+  #     - "9753:53/tcp"
+  #     - "9753:53/udp"
+  #     - "5333:5333/tcp"
+  #     - "5333:5333/udp"
+  #   # volumes:
+  #     # - ${USERDIR}/unbound/unbound.conf:/opt/unbound/etc/unbound/unbound.conf
+  #     # - ${USERDIR}/unbound/root.hints:/var/unbound/etc/unbound/root.hints
+  #     # - ${USERDIR}/unbound/unbound.log:/var/log/unbound/unbound.log
+  #   cap_add:
+  #   - NET_ADMIN
+  #   restart: unless-stopped
+
+  # unbound:
+  #   image: folhabranca/unbound:latest
+  #   #network_mode: bridge
+  #   networks:
+  #     pihole_unbound:
+  #       ipv4_address: 192.168.1.2
+  #     default:
+  #   ports:
+  #     - "5322:5322/udp"
+  #     - "5322:5322"
+  #   volumes:
+  #     #- ${USERDIR}/unbound/unbound.conf.d:/opt/unbound/etc/unbound/unbound.conf.d
+  #     - ${USERDIR}/unbound/unbound.log:/opt/unbound/etc/unbound/log/unbound.log
+  #   environment:
+  #     - INTERFACE=0.0.0.0
+  #     - PORT=5322
+  #     - DO_IPV6=no
+  #     - DO_IPV4=yes
+  #     - DO_UDP=yes
+  #     - DO_TCP=yes
+  #     - VERBOSITY=1
+  #     - NUM_THREADS=1
+  #     - SO_REUSEPORT=yes
+  #     - HIDE_IDENTITY=yes
+  #     - HIDE_VERSION=yes
+  #     - QNAME_MINIMISATION=yes
+  #     - RRSET_ROUNDROBIN=yes
+  #     - USE_CAPS_FOR_ID=yes
+  #     - ENABLE_REMOTE_CONTROL=yes
+  #     - USE_LOGFILE=no
+  #     - USE_CHROOT=yes
+  #     - INFRA_HOST_TTL=60
+  #   cap_add:
+  #     - net_admin
+  #   restart: always
 
   portainer:
     container_name: portainer
-    restart: always  
+    restart: always
     image: portainer/portainer:latest
     volumes:
       - ${USERDIR}/portainer:/data
@@ -78,26 +150,7 @@ services:
       - "9001:9001"
     #   - 8883:8883
     networks:
-      - traefik_proxy
-      #- default
-    labels:
-      - "traefik.enable=true"
-      - "traefik.port=9001"
-      - "traefik.backend=mosquitto"
-      - "traefik.frontend.rule=Host:mosquitto.${DOMAINNAME}"
-      - "traefik.protocol=https"
-      - "traefik.docker.network=traefik_proxy"
-      - "traefik.frontend.headers.SSLRedirect=true"
-      - "traefik.frontend.headers.STSSeconds=315360000"
-      - "traefik.frontend.headers.browserXSSFilter=true"
-      - "traefik.frontend.headers.contentTypeNosniff=true"
-      - "traefik.frontend.headers.forceSTSHeader=true"
-      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
-      - "traefik.frontend.headers.STSIncludeSubdomains=true"
-      - "traefik.frontend.headers.STSPreload=true"
-      - "traefik.frontend.headers.frameDeny=true"
-      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
-      
+      - default
 
   mongo:
     container_name: mongo
@@ -112,7 +165,7 @@ services:
   influxdb:
     container_name: influxdb
     restart: always
-    image: influxdb:latest  
+    image: influxdb:latest
     volumes:
       # files cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
       - ${USERDIR}/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
@@ -207,25 +260,11 @@ services:
       - /etc/localtime:/etc/localtime:ro
     ports:
       - "1880:1880"
-  
-  # mqttbridge:
-  #   container_name: mqttbridge
-  #   image: stjohnjohnson/smartthings-mqtt-bridge:latest
-  #   volumes:
-  #     - ${USERDIR}/mqtt-bridge:/config
-  #   ports:
-  #     - 8080
-  #   links:
-  #     - mosquitto
-  #   networks:
-  #     - traefik_proxy
-  #     - default
-  #   labels:
-  #     - "traefik.enable=false"
-  
+
   fail2ban:
     container_name: fail2ban
     image: crazymax/fail2ban:latest
+    restart: always
     network_mode: "host"
     depends_on:
       - "pihole"
@@ -238,7 +277,7 @@ services:
 
   traefik:
     hostname: traefik
-    image: traefik:latest
+    image: traefik:1.7
     container_name: traefik
     restart: always
     volumes:
@@ -266,8 +305,8 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.backend=traefik"
-      - "traefik.frontend.rule=Host:traefik.${DOMAINNAME}" 
-      - "traefik.frontend.auth.basic: ${HTTP_USERNAME}:${HTTP_PASSWORD}" 
+      - "traefik.frontend.rule=Host:traefik.${DOMAINNAME}"
+      - "traefik.frontend.auth.basic: ${HTTP_USERNAME}:${HTTP_PASSWORD}"
       - "traefik.port=8080"
       - "traefik.docker.network=traefik_proxy"
       - "traefik.frontend.headers.SSLRedirect=true"
@@ -279,6 +318,8 @@ services:
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
 
   nextcloud:
     container_name: nextcloud
@@ -301,7 +342,7 @@ services:
       - traefik_proxy
     depends_on:
       - "pihole"
-      - "mariadb"  
+      - "mariadb"
     links:
       - mariadb
     labels:
@@ -322,7 +363,7 @@ services:
       - "traefik.frontend.headers.frameDeny=true"
       - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
       - com.centurylinklabs.watchtower.enable="false"
-  
+
   mariadb:
     image: mariadb:latest
     container_name: "mariadb"
@@ -333,7 +374,7 @@ services:
       - ${USERDIR}/mariadb/config:/config
       - ${USERDIR}/mariadb/mysql:/var/lib/mysql
     ports:
-      - "3306:3306/tcp"
+      - "${MARIA_DB_PORT}:${MARIA_DB_PORT}/tcp"
     environment:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       #- MYSQL_USER=${MYSQL_USER}
@@ -345,7 +386,7 @@ services:
     labels:
       - traefik.enable=false
       - com.centurylinklabs.watchtower.enable="false"
-  
+
   phpmyadmin:
     hostname: phpmyadmin
     container_name: phpmyadmin
@@ -353,7 +394,7 @@ services:
     restart: always
     depends_on:
       - "pihole"
-      - "mariadb"  
+      - "mariadb"
     links:
       - mariadb:db
     ports:
@@ -368,7 +409,7 @@ services:
     container_name: ipam
     depends_on:
       - mariadb
-    image: pierrecdn/phpipam
+    image: pierrecdn/phpipam:latest
     volumes:
       - ${USERDIR}/phpipam:/var/www/
     environment:
@@ -408,7 +449,7 @@ services:
     labels:
       - "traefik.enable=true"
       - "traefik.backend=organizr"
-      - "traefik.frontend.rule=Host:organizr.${DOMAINNAME}"  
+      - "traefik.frontend.rule=Host:organizr.${DOMAINNAME}"
       #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /organizr"
       - "traefik.port=80"
       - "traefik.protocol=https"
@@ -423,9 +464,11 @@ services:
       - "traefik.frontend.headers.STSPreload=true"
       #- "traefik.frontend.headers.frameDeny=true"
       - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
 
   duplicati:
-    image: duplicati/duplicati
+    image: duplicati/duplicati:latest
     container_name: duplicati
     restart: always
     network_mode: "bridge"
@@ -443,11 +486,11 @@ services:
 
   bookstack:
     container_name: bookstack
-    image: solidnerd/bookstack
+    image: solidnerd/bookstack:latest
     depends_on:
     - mariadb
     environment:
-    - DB_HOST=mariadb:3306
+    - DB_HOST=mariadb:${MARIA_DB_PORT}
     - DB_DATABASE=${BOOKSTACK_DATABASE}
     - DB_USERNAME=${BOOKSTACK_DATABASE_USERNAME}
     - DB_PASSWORD=${BOOKSTACK_DATABASE_PASSWORD}
@@ -458,7 +501,7 @@ services:
     - "8581:80"
 
   calibre-web:
-    image: linuxserver/calibre-web
+    image: linuxserver/calibre-web:latest
     container_name: calibre-web
     environment:
       - PUID=${PUID}
@@ -505,7 +548,7 @@ services:
         - ${USERDIR}/netdata/var/run/docker.sock:/var/run/docker.sock:ro
 
   transmission-openvpn:
-    image: haugene/transmission-openvpn
+    image: haugene/transmission-openvpn:latest
     container_name: transmission-openvpn
     cap_add:
       - NET_ADMIN
@@ -532,11 +575,12 @@ services:
       - OPENVPN_USERNAME=${OPENVPN_USERNAME}
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60
-      - LOCAL_NETWORK=${LOCAL_NETWORK}
+      - LOCAL_NETWORK=${LOCAL_NETWORK}/24
       - TRANSMISSION_RATIO_LIMIT=0.01
       - TRANSMISSION_RATIO_LIMIT_ENABLED=true
       - TRANSMISSION_SPEED_LIMIT_UP=1
       - TRANSMISSION_SPEED_LIMIT_UP_ENABLED=false
+      - TRANSMISSION_PEER_PORT=${TRANSMISSION_PEER_PORT}
     sysctls:
       - net.ipv6.conf.all.disable_ipv6=0
   # proxy:
@@ -556,15 +600,15 @@ services:
   #     - RSS_URL=http://.../xxxxx.rss
 
   sonarr:
-    image: linuxserver/sonarr
+    image: linuxserver/sonarr:latest
     container_name: sonarr
     restart: always
     networks:
-        - traefik_proxy       
+        - traefik_proxy
     ports:
         - "8989:8989"
     depends_on:
-      - "transmission-openvpn" 
+      - "transmission-openvpn"
     volumes:
         - ${USERDIR}/sonarr/config:/config
         - ${MEDIA_PATH}/Downloads:/downloads
@@ -579,7 +623,7 @@ services:
     image: linuxserver/radarr:latest
     container_name: radarr
     depends_on:
-      - "transmission-openvpn" 
+      - "transmission-openvpn"
     ports:
       - "7878:7878"
     volumes:
@@ -624,7 +668,7 @@ services:
     image: linuxserver/jackett:latest
     container_name: jackett
     depends_on:
-      - "transmission-openvpn" 
+      - "transmission-openvpn"
     ports:
       - "9117:9117"
     volumes:
@@ -702,7 +746,7 @@ services:
       - PGID=${PGID}
       - TZ=${TZ}
     volumes:
-      - ${USERDIR}bazarr/config:/config
+      - ${USERDIR}/bazaar/config:/config
       - ${MEDIA_PATH}/Movies:/movies
       - ${MEDIA_PATH}/TV:/tv
     ports:
@@ -711,31 +755,140 @@ services:
 
   plex:
     container_name: plex
-    image: linuxserver/plex
+    image: linuxserver/plex:latest
     restart: unless-stopped
-    network_mode: host
+    #network_mode: host
     ports:
-      - 32400:32400/tcp
-      # - 3005:3005/tcp
-      # - 8324:8324/tcp
-      # - 32469:32469/tcp
-      # - 1900:1900/udp
-      # - 32410:32410/udp
-      # - 32412:32412/udp
-      # - 32413:32413/udp
-      # - 32414:32414/udp
+      - "32400:32400/tcp"
+      - "3005:3005/tcp"
+      - "8324:8324/tcp"
+      - "32469:32469/tcp"
+      - "1900:1900/udp"
+      - "32410:32410/udp"
+      - "32412:32412/udp"
+      - "32413:32413/udp"
+      - "32414:32414/udp"
     environment:
       - TZ=${TZ}
       - PUID=${PUID}
       - PGID=${PGID}
       - VERSION=docker
-      # - PLEX_CLAIM=<claimToken>
-      # - ADVERTISE_IP=http://<hostIPAddress>:32400/
+      - PLEX_CLAIM={PLEX_CLAIM}
+      - ADVERTISE_IP=http://{LOCAL_IP}:32400/,https://plex.${DOMAINNAME}:443
+      - HOSTNAME="plex"
+      - ALLOWED_NETWORKS={LOCAL_NETWORK}/255.255.255.0
     volumes:
-      - ${USERDIR}:/config
+      - ${USERDIR}/plex:/config
       - ${MEDIA_PATH}/temp:/transcode
       - ${MEDIA_PATH}/Movies:/data/movies
       - ${MEDIA_PATH}/TV:/data/tvshows
+      - ${MEDIA_PATH}/Music:/data/music
+    networks:
+      - traefik_proxy
+      - default
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=plex"
+      - "traefik.frontend.rule=Host:plex.${DOMAINNAME}"
+      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /plex"
+      - "traefik.port=32400"
+      - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+
+  ombi:
+    container_name: ombi
+    restart: always
+    image: linuxserver/ombi:latest
+    volumes:
+      - ${USERDIR}/ombi:/config
+    ports:
+      - "3579:3579"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    # networks:
+    #   - traefik_proxy
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.backend=ombi"
+    #   - "traefik.frontend.rule=Host:ombi.${DOMAINNAME}"
+    #   #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /ombi"
+    #   - "traefik.port=3579"
+    #   - "traefik.protocol=https"
+    #   - "traefik.docker.network=traefik_proxy"
+    #   - "traefik.frontend.headers.SSLRedirect=true"
+    #   - "traefik.frontend.headers.STSSeconds=315360000"
+    #   - "traefik.frontend.headers.browserXSSFilter=true"
+    #   - "traefik.frontend.headers.contentTypeNosniff=true"
+    #   - "traefik.frontend.headers.forceSTSHeader=true"
+    #   - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+    #   - "traefik.frontend.headers.STSIncludeSubdomains=true"
+    #   - "traefik.frontend.headers.STSPreload=true"
+    #   - "traefik.frontend.headers.frameDeny=true"
+    #   - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+    #   - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+    #   - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+
+  firefly_iii: 
+    container_name: firefly_iii
+    image: jc5x/firefly-iii:latest
+    depends_on:
+      - mariadb
+    links:
+      - mariadb
+    networks: 
+      - default
+    ports: 
+      - "8675:80"
+    volumes: 
+      - ${USERDIR}/fireflyiii/storage/export:/var/www/firefly-iii/storage/export
+      - ${USERDIR}/fireflyiii/storage/upload:/var/www/firefly-iii/storage/upload
+      - ${USERDIR}/fireflyiii/storage:/var/www/firefly-iii/storage/
+    environment:
+      - TZ=${TZ}
+      - DB_CONNECTION=mysql
+      - DB_HOST=mariadb
+      - DB_PORT=${MARIA_DB_PORT}
+      - DB_DATABASE=${FIREFLY_DATABASE}
+      - DB_USERNAME=${FIREFLY_USER}
+      - DB_PASSWORD=${FIREFLY_DB_PASSWORD}
+      - APP_KEY=${FIREFLY_APP_KEY}
+      - APP_LOG_LEVEL=debug
+      - APP_ENV=local
+
+  monicahq:
+    image: monicahq/monicahq
+    depends_on:
+      - mariadb
+    ports:
+      - "9521:80"
+    volumes:
+      - ${USERDIR}/monica:/var/www/monica/storage
+    restart: always
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=mariadb
+      - DB_PORT=${MARIA_DB_PORT}
+      - DB_DATABASE=${MONICA_DATABASE}
+      - DB_USERNAME=${MONICA_DATABASE_USER}
+      - DB_PASSWORD=${MONICA_DB_PASSWORD}
+      - APP_KEY=${MONICA_APP_KEY}
+      - APP_LOG_LEVEL=debug
+      - APP_ENV=local
+
 
 networks:
   traefik_proxy:
@@ -743,3 +896,6 @@ networks:
       name: traefik_proxy
   default:
     driver: bridge
+  # pihole_unbound:
+  #   external:
+  #     name: pihole_unbound
