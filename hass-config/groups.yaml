@@ -35,3 +35,8 @@ all_people:
   entities:
     - person.becca
     - person.blaine
+office_motion_sensors:
+  name: Office Motion Sensors
+  entities:
+    - binary_sensor.desk_motion_sensor
+    - binary_sensor.office_motion_sensor

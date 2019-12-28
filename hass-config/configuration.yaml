@@ -36,6 +36,8 @@ http:
 
 # Discover some devices automatically
 discovery:
+  ignore:
+    - roku
 
 # Allows you to issue voice commands from the frontend in enabled browsers
 conversation:
@@ -59,8 +61,6 @@ tts:
 
 # Cloud
 cloud:
-
-mobile_app:
 
 mqtt:
   broker: !secret local_ip
@@ -160,8 +160,8 @@ media_player:
     ip_address: !secret local_ip
     port: 32400
   
-roku:
-  - host: !secret roku_ip
+# roku:
+#   - host: !secret roku_ip
 
 lovelace:
   mode: yaml
@@ -178,9 +178,12 @@ calendar:
       - !secret calendar_4_name
     
 tplink:
-   switch:
-    - host: !secret window_light_switch_ip
-    - host: !secret dining_room_switch_ip
+    switch:
+      - host: !secret window_light_switch_ip
+      - host: !secret dining_room_switch_ip
+    strip:
+      - host: !secret power_strip_ip
+
 
 vacuum:
   - platform: roomba

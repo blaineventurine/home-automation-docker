@@ -1,0 +1,19 @@
+rhasspy_light_state:
+  alias: change_light_state
+  fields:
+    light_name:
+      description: "Light Entity"
+      example: light.bulb_1
+    light_state:
+      description: "State to change the light to"
+      example: on
+  sequence:
+    - service_template: >
+        {% set this_state = light_state | string %}
+        {% if this_state == 'on' %}
+          homeassistant.turn_on
+        {%else %}
+          homeassistant.turn_off
+        {% endif %}
+      data_template:
+        entity_id: "{{ light_name }}"

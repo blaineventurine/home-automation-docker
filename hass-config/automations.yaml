@@ -80,6 +80,78 @@
     - service: vacuum.turn_on
       data:
        entity_id: vacuum.roomba
+    - service: notify.mobile_app_blaines_phone
+      data:
+        message: 'Roomba started'
+
+- alias: Turn heat down when away
+  trigger:
+    platform: state
+    entity_id: group.all_people
+    from: 'home'
+    to: 'not_home'
+    for:
+      minutes: 30
+  condition:     
+      - condition: numeric_state
+        entity_id: sensor.dark_sky_temperature
+        below: 45
+  action:
+    - service: climate.turn_on
+      entity_id: climate.dining_room_nest
+    - service: climate.set_temperature
+      data:
+        entity_id: climate.dining_room_nest
+        temperature: 55
+        operation_mode: Heat
+
+- alias: Turn off office light if no motion detected
+  trigger:
+    platform: state
+    entity_id: group.office_motion_sensors
+    to: 'off'
+    for:
+      minutes: 10
+  action:
+    service: switch.turn_off
+    data:
+      entity_id:
+        - switch.office_lights
+
+- alias: Turn on humidifier if humidity below 55%
+  trigger:
+    platform: state
+    entity_id: sensor.pi_one_humidity
+  action:
+    service_template: >-
+      {% set humidity = states('sensor.pi_one_humidity') | float %}
+      {% if humidity > 70 %}
+        switch.turn_off
+      {% elif humidity < 55 %}
+        switch.turn_on
+      {% endif %}
+    entity_id: switch.unnamed_device
 
 
+
+# Rhasspy is not working right
+# - alias: Toggle office lights by voice
+#   # trigger:
+#   #   platform: event
+#   #   event_type: rhasspy_ChangeLightState
+#   # action:
+#   #   service: light.turn_on
+#   #   data:
+#   #     entity_id: light.office
+#   trigger:
+#     - event_data: {}
+#       event_type: rhasspy_ChangeLightState
+#       platform: event
+#   condition: []
+#   action:
+#     - alias: ''
+#       data_template:
+#         light_name: "{{ trigger.event.data.light_name }}"
+#         light_state: "{{ trigger.event.data.light_state }}"
+#       service: script.rhasspy_light_state   
 

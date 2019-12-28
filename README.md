@@ -34,6 +34,7 @@ Currently, I'm running:
 * [Plex](#plex) - a media server, with apps for Roku, Android, iPhone, and more
 * [Portainer](#portainer) - an easy GUI to manage docker containers
 * [Radarr](#radarr) - an automated way to find and download movies via torrent or newsgroup
+* [Rhasspy](#rhasspy) - a self-hosted alterative to Alexa, integrates well with Home Assistant, and all of your data stays local
 * [Sonarr](#sonarr) - like Radarr, but for TV shows - add a show to your wanted list and episodes will show up in Plex as they get downloaded
 * [Traefik](#traefik) - a reverse proxy with https thanks to Let's Encrypt
 * [Transmission/OpenVPN](#transmission) - a torrent client, we'll be using a VPN with it

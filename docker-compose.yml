@@ -870,6 +870,7 @@ services:
       - APP_ENV=local
 
   monicahq:
+    container_name: monica
     image: monicahq/monicahq
     depends_on:
       - mariadb
@@ -888,6 +889,17 @@ services:
       - APP_KEY=${MONICA_APP_KEY}
       - APP_LOG_LEVEL=debug
       - APP_ENV=local
+  
+  rhasspy:
+    container_name: rhasspy
+    image: synesthesiam/rhasspy-server:latest
+    volumes:
+      - ${USERDIR}/rhasspy/profiles:/profiles
+    devices:
+      - /dev/snd:/dev/snd
+    ports:
+      - "12101:12101"
+    command: --profile en --user-profiles /profiles
 
 
 networks:

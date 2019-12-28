@@ -47,8 +47,6 @@ views:
           icon: mdi:lamp
           tap_action:
             action: toggle
-    - type: media-control
-      entity: media_player.living_room
     - type: glance
       title: Doors
       show_state: false
@@ -61,6 +59,7 @@ views:
           icon: mdi:door
     - type: map
       default_zoom: 16
+      dark_mode: true
       entities:
         - entity: !secret device_tracker_entity
         - zone.home
@@ -81,6 +80,13 @@ views:
           tap_action:
             action: toggle
           type: entity-button
+        - entity: switch.unnamed_device
+          name: Humidifier
+          show_icon: false
+          show_name: true
+          tap_action:
+            action: toggle
+            type: entity-button
 
 
   - title: temperature
@@ -105,8 +111,16 @@ views:
       name: Kitchen Door Temperature
       graph: line
     - type: sensor
-      entity: sensor.office_motion_sensor_temperature
+      entity: sensor.office_motion_sensor_temperature_measurement
       name: Office Temperature
+      graph: line
+    - type: sensor
+      entity: sensor.pi_one_humidity
+      name: Bedroom Humidity
+      graph: line
+    - type: sensor
+      entity: sensor.dining_room_thermostat_nest_humidity
+      name: Dining Room Humidity
       graph: line
 
   - title: lights
@@ -124,6 +138,11 @@ views:
         - entity: light.beccas_nightstand
           name: Becca's Nightstand
           icon: mdi:desk-lamp
+          tap_action:
+            action: toggle
+        - entity: switch.bedroom_grow_lights
+          name: Plant Lights
+          icon: mdi:lightbulb
           tap_action:
             action: toggle
     - type: glance
@@ -263,4 +282,5 @@ views:
         - !secret calendar_3
         - !secret calendar_4
 
-
+  - title: TV & Movies
+    icon: mdi:television-box
