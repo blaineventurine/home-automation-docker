@@ -246,6 +246,23 @@ switch:
             data:
               entity_id: group.bedroom_lights
 
+tts:
+  - platform: marytts
+    host: !secret mary_tts_url
+    port: 59125
+    codec: 'wav'
+    voice: 'cmu-slt-hsmm'
+    language: 'en-US'
+
+
+rest_command:
+  marytts:
+    url: !secret rhasppy_client_url
+    method: POST
+    headers:
+      content_type: text/plain
+    payload: '{{ message }}'
+
 group: !include groups.yaml
 automation: !include automations.yaml
 script: !include scripts.yaml

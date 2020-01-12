@@ -901,6 +901,12 @@ services:
       - "12101:12101"
     command: --profile en --user-profiles /profiles
 
+  marytts:
+    container_name: marytts
+    image: synesthesiam/marytts:5.2
+    restart: unless-stopped
+    ports:
+      - "59125:59125"
 
 networks:
   traefik_proxy:

@@ -80,7 +80,7 @@ views:
           tap_action:
             action: toggle
           type: entity-button
-        - entity: switch.unnamed_device
+        - entity: switch.humidifier
           name: Humidifier
           show_icon: false
           show_name: true

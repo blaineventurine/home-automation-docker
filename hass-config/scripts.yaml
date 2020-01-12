@@ -16,4 +16,4 @@ rhasspy_light_state:
           homeassistant.turn_off
         {% endif %}
       data_template:
-        entity_id: "{{ light_name }}"
+        entity_id: '{{ light_name | replace(" ", "_") }}'

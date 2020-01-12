@@ -75,7 +75,7 @@
        after: '10:00:00'
        before: '18:00:00'     
      - condition: template
-       value_template: '{{ as_timestamp(now()) - as_timestamp(states.automation.start_roomba_while_we_are_away.attributes.last_triggered) | int > 172800 }}'
+       value_template: '{{ as_timestamp(now()) - as_timestamp(states.automation.start_roomba_while_we_are_away.attributes.last_triggered) | int > 86400 }}'
   action:
     - service: vacuum.turn_on
       data:
@@ -105,7 +105,7 @@
         temperature: 55
         operation_mode: Heat
 
-- alias: Turn off office light if no motion detected
+- alias: Turn off office lights if no motion detected
   trigger:
     platform: state
     entity_id: group.office_motion_sensors
@@ -114,6 +114,17 @@
       minutes: 10
   action:
     service: switch.turn_off
+    data:
+      entity_id:
+        - switch.office_lights
+
+- alias: Turn on office lights if I'm at my desk
+  trigger:
+    platform: state
+    entity_id: binary_sensor.desk_motion_sensor
+    to: 'on'
+  action:
+    service: switch.turn_on
     data:
       entity_id:
         - switch.office_lights
@@ -130,28 +141,57 @@
       {% elif humidity < 55 %}
         switch.turn_on
       {% endif %}
-    entity_id: switch.unnamed_device
+    entity_id: switch.humidifier
 
+- alias: Toggle lights by voice
+  trigger:
+    - event_data: {}
+      event_type: rhasspy_ChangeLightState
+      platform: event
+  condition: []
+  action:
+    - alias: ''
+      data_template:
+        light_name: "group.{{ trigger.event.data.light_name }}"
+        light_state: "{{ trigger.event.data.light_state }}"
+      service: script.rhasspy_light_state   
 
+- alias: Say the time
+  trigger:
+    platform: event
+    event_type: rhasspy_GetTime
+  action:
+    service: rest_command.marytts
+    data_template:
+      message: "It is {{ now().strftime('%I') | int }} {{ now().strftime('%M %p') }}."
 
-# Rhasspy is not working right
-# - alias: Toggle office lights by voice
-#   # trigger:
-#   #   platform: event
-#   #   event_type: rhasspy_ChangeLightState
-#   # action:
-#   #   service: light.turn_on
-#   #   data:
-#   #     entity_id: light.office
-#   trigger:
-#     - event_data: {}
-#       event_type: rhasspy_ChangeLightState
-#       platform: event
-#   condition: []
-#   action:
-#     - alias: ''
-#       data_template:
-#         light_name: "{{ trigger.event.data.light_name }}"
-#         light_state: "{{ trigger.event.data.light_state }}"
-#       service: script.rhasspy_light_state   
+- alias: Say the temperature
+  trigger:
+    platform: event
+    event_type: rhasspy_GetTemperature
+  action:
+    service: rest_command.marytts
+    data_template:
+      message: "It is {{ states('sensor.dark_sky_temperature') }} degrees."
 
+- alias: Say the forecast
+  trigger:
+    platform: event
+    event_type: rhasspy_GetForecast
+  action:
+    service: rest_command.marytts
+    data_template:
+      message: > 
+        It's currently {{states.sensor.dark_sky_summary.state}} and {{states.sensor.dark_sky_temperature.state|round}} degrees.
+        {% if is_state("sensor.allergy_season", "True")  %}
+        The pollen level for today is {{states.sensor.pollen_level.state}} or {{states.sensor.pollen_index.state}} percent.
+        {% endif %}
+        {% if is_state("sensor.flu_season", "True") %}
+        The flu risk for today is {{states.sensor.cold_flu_risk.state}} or {{states.sensor.cold_flu_percentage.state}} percent.
+        {% endif %}
+        Today you can expect {{states.sensor.dark_sky_hourly_summary.state}}.
+        With a high of {{states.sensor.dark_sky_daily_high_temperature.state|round|int}} and a low of {{states.sensor.dark_sky_daily_low_temperature.state|round|int}}.
+        {% if states.sensor.dark_sky_wind_speed.state|int > 10 %}
+        Be advised it is windy outside.
+        {% endif %}
+      
