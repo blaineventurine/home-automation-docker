@@ -19,6 +19,9 @@
 !/.github-files
 !/.github-files/*
 
+!/rhasppy/profiles/en/sentences.ini
+!/rhasspy/profiles/en/slots/*
+
 
 known_devices.yaml
 secrets.yaml
