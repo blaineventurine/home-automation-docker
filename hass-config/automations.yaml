@@ -174,24 +174,23 @@
     data_template:
       message: "It is {{ states('sensor.dark_sky_temperature') }} degrees."
 
-- alias: Say the forecast
-  trigger:
-    platform: event
-    event_type: rhasspy_GetForecast
-  action:
-    service: rest_command.marytts
-    data_template:
-      message: > 
-        It's currently {{states.sensor.dark_sky_summary.state}} and {{states.sensor.dark_sky_temperature.state|round}} degrees.
-        {% if is_state("sensor.allergy_season", "True")  %}
-        The pollen level for today is {{states.sensor.pollen_level.state}} or {{states.sensor.pollen_index.state}} percent.
-        {% endif %}
-        {% if is_state("sensor.flu_season", "True") %}
-        The flu risk for today is {{states.sensor.cold_flu_risk.state}} or {{states.sensor.cold_flu_percentage.state}} percent.
-        {% endif %}
-        Today you can expect {{states.sensor.dark_sky_hourly_summary.state}}.
-        With a high of {{states.sensor.dark_sky_daily_high_temperature.state|round|int}} and a low of {{states.sensor.dark_sky_daily_low_temperature.state|round|int}}.
-        {% if states.sensor.dark_sky_wind_speed.state|int > 10 %}
-        Be advised it is windy outside.
-        {% endif %}
-      
+# - alias: Say the forecast
+#   trigger:
+#     platform: event
+#     event_type: rhasspy_GetForecast
+#   action:
+#     service: rest_command.marytts
+#     data_template:
+#       message: "It's currently {{states.sensor.dark_sky_summary.state}} and {{states.sensor.dark_sky_temperature.state|round}} degrees."
+#       {% if is_state("sensor.allergy_season", "True")  %}
+#       "The pollen level for today is {{states.sensor.pollen_level.state}} or {{states.sensor.pollen_index.state}} percent."
+#       {% endif %}
+#       {% if is_state("sensor.flu_season", "True") %}
+#       "The flu risk for today is {{states.sensor.cold_flu_risk.state}} or {{states.sensor.cold_flu_percentage.state}} percent."
+#       {% endif %}
+#       "Today you can expect {{states.sensor.dark_sky_hourly_summary.state}} with a high of {{states.sensor.dark_sky_daily_high_temperature.state|round|int}} and a low of {{states.sensor.dark_sky_daily_low_temperature.state|round|int}}."
+#       {% if states.sensor.dark_sky_wind_speed.state|int > 10 %}
+#       "Be advised it is windy outside."
+#       {% endif %}
+  
+# - alias: Turn on Amazon Prime Video/Netflix/Hulu

@@ -36,8 +36,8 @@ http:
 
 # Discover some devices automatically
 discovery:
-  ignore:
-    - roku
+  # ignore:
+  #   - roku
 
 # Allows you to issue voice commands from the frontend in enabled browsers
 conversation:
@@ -191,8 +191,9 @@ vacuum:
     username: !secret roomba_blid
     password: !secret roomba_password
 
-# Lovelace won't properly toggle icons for groups, this is a workaround
 switch:
+
+# Lovelace won't properly toggle icons for groups, this is a workaround
   - platform: template
     switches:
         office_lights:

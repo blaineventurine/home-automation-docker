@@ -21,6 +21,7 @@ Currently, I'm running:
 * [Lidarr](#lidarr) - the cousin of radarr/sonarr, lidarr is for finding and downloading music
 * [MariaDB Backup](#mariadb-backup) - an automated backup for MariaDB
 * [MariaDB](#mariadb) - a drop-in replacement for MySQL, used as the DB for Nextcloud and a few other things
+* [MaryTTS](#marytts) - text-to-speech, works with [Rhasspy](#rhasspy) and [Home Assistant](#home-assistant) automations
 * [MongoDB](#mongodb) - a database I no longer use and will probably remove
 * [Monica](#monica) - personal CRM
 * [Mosquitto](#mosquitto) - an MQTT server
@@ -40,7 +41,7 @@ Currently, I'm running:
 * [Transmission/OpenVPN](#transmission) - a torrent client, we'll be using a VPN with it
 * [Ubooquity](#ubooquity) - ebook manager
 * [Watchtower](#watchtower) - automatically updates docker containers
-* ~[Unbound](#unbound) - stop using Google DNS or Cloudflare and be your own DNS resolver~ not working well with PiHole, work in progress
+* ~~[Unbound](#unbound) - stop using Google DNS or Cloudflare and be your own DNS resolver~~ not working well with PiHole, work in progress
 * ~~[MQTTBridge](#mqtt-bridge) - to make Samsung SmartThings post to MQTT topics~~ possibly not needed any more thanks to a Home Assistant update, still working on this
 
 as containers, and my server has a [Samba](#samba) share set up to allow access to media stored elsewhere on my network. I've configured my persistent container data to be shared, allowing me to edit config files from the comfort of my desktop without needing to SSH in, and having Samba set up is useful for [Duplicati](#duplicati) backups.
@@ -138,7 +139,7 @@ USERDIR=
 `DOMAINNAME` is self-explanatory - `my-website.com` or whatever it is you own.  
 `LOCALIP` is the local network address of your server.  
 
-The rest of them can wait for now.
+The rest of them can wait for now, and there will be quite a few more we'll be adding later on.
 
 Cloudflare was by far the easiest to integrate with Traefik (and use wildcard certificates for subdomains) between the various DNS servers I tried - NameCheap, Google Domains, and Amazon - and this guide assumes that's what you're using.
 
@@ -373,7 +374,7 @@ Now we can edit the `traefik.toml` file you created earlier.
       address = ":443"
       compress = true
         [entryPoints.https.tls]
-          minVersion = "VersionTLS13"
+          minVersion = "VersionTLS12"
           cipherSuites = [
             "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256",
             "TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256",
@@ -919,7 +920,7 @@ After installion, the default login is `admin@admin.com` and the password is `pa
       depends_on:
       - mariadb
       environment:
-      - DB_HOST=mariadb:3306
+      - DB_HOST=mariadb:${MARIA_DB_PORT}
       - DB_DATABASE=${BOOKSTACK_DATABASE}
       - DB_USERNAME=${BOOKSTACK_DATABASE_USERNAME}
       - DB_PASSWORD=${BOOKSTACK_DATABASE_PASSWORD}
@@ -932,15 +933,6 @@ After installion, the default login is `admin@admin.com` and the password is `pa
 ## Samba
 
 Samba is a network file-sharing system. It has its own section because it requires a few steps to get running properly. This is one thing that doesn't live in a Docker container.
-
-## Samsung SmartThings Integration
-
-SmartThings was a pain to setup. Samsung created a very half-assed walled garden with this one. There are a few things we need to set up in order to get SmartThings devices talking to MQTT:
-
-* [MQTTBridge](#mqtt-bridge)
-* Samsung SmartThings **Classic** app on your phone - the new one will not work
-* A [SmartThings IDE](https://graph.api.smartthings.com/) account
-* A lot of patience
 
 ### MQTT Bridge
 
@@ -1018,36 +1010,62 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
 
     plex:
       container_name: plex
-      image: linuxserver/plex
+      image: linuxserver/plex:latest
       restart: unless-stopped
-      network_mode: host
+      #network_mode: host
       ports:
-        - 32400:32400/tcp
-        # - 3005:3005/tcp
-        # - 8324:8324/tcp
-        # - 32469:32469/tcp
-        # - 1900:1900/udp
-        # - 32410:32410/udp
-        # - 32412:32412/udp
-        # - 32413:32413/udp
-        # - 32414:32414/udp
+        - "32400:32400/tcp"
+        - "3005:3005/tcp"
+        - "8324:8324/tcp"
+        - "32469:32469/tcp"
+        - "1900:1900/udp"
+        - "32410:32410/udp"
+        - "32412:32412/udp"
+        - "32413:32413/udp"
+        - "32414:32414/udp"
       environment:
         - TZ=${TZ}
         - PUID=${PUID}
         - PGID=${PGID}
         - VERSION=docker
-        # - PLEX_CLAIM=<claimToken>
-        # - ADVERTISE_IP=http://<hostIPAddress>:32400/
+        - PLEX_CLAIM={PLEX_CLAIM}
+        - ADVERTISE_IP=http://{LOCAL_IP}:32400/,https://plex.${DOMAINNAME}:443
+        - HOSTNAME="plex"
+        - ALLOWED_NETWORKS={LOCAL_NETWORK}/255.255.255.0
       volumes:
-        - ${USERDIR}:/config
+        - ${USERDIR}/plex:/config
         - ${MEDIA_PATH}/temp:/transcode
         - ${MEDIA_PATH}/Movies:/data/movies
         - ${MEDIA_PATH}/TV:/data/tvshows
+        - ${MEDIA_PATH}/Music:/data/music
+      networks:
+        - traefik_proxy
+        - default
+      labels:
+        - "traefik.enable=true"
+        - "traefik.backend=plex"
+        - "traefik.frontend.rule=Host:plex.${DOMAINNAME}"
+        #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /plex"
+        - "traefik.port=32400"
+        - "traefik.protocol=https"
+        - "traefik.docker.network=traefik_proxy"
+        - "traefik.frontend.headers.SSLRedirect=true"
+        - "traefik.frontend.headers.STSSeconds=315360000"
+        - "traefik.frontend.headers.browserXSSFilter=true"
+        - "traefik.frontend.headers.contentTypeNosniff=true"
+        - "traefik.frontend.headers.forceSTSHeader=true"
+        - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+        - "traefik.frontend.headers.STSIncludeSubdomains=true"
+        - "traefik.frontend.headers.STSPreload=true"
+        - "traefik.frontend.headers.frameDeny=true"
+        - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+        - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+        - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
 
 ## Transmission
 
-    transmission:
-      image: haugene/transmission-openvpn
+    transmission-openvpn:
+      image: haugene/transmission-openvpn:latest
       container_name: transmission-openvpn
       cap_add:
         - NET_ADMIN
@@ -1064,9 +1082,9 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
       volumes:
         - /etc/localtime:/etc/localtime:ro
         - ${USERDIR}/transmission:/data
-        - ${EMBY_MEDIA_PATH}/Downloads:/data/completed
-        - ${EMBY_MEDIA_PATH}/Downloads:/data/incomplete
-        - ${EMBY_MEDIA_PATH}/torrent-files:/data/watch
+        - ${MEDIA_PATH}/Downloads:/data/completed
+        - ${MEDIA_PATH}/Downloads:/data/incomplete
+        - ${MEDIA_PATH}/torrent-files:/data/watch
       environment:
         - PUID=${PUID}
         - PGID=${PGID}
@@ -1074,11 +1092,12 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
         - OPENVPN_USERNAME=${OPENVPN_USERNAME}
         - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
         - OPENVPN_OPTS=--inactive 3600 --ping 10 --ping-exit 60
-        - LOCAL_NETWORK=${LOCAL_NETWORK}
-        - TRANSMISSION_RATIO_LIMIT=1.00
+        - LOCAL_NETWORK=${LOCAL_NETWORK}/24
+        - TRANSMISSION_RATIO_LIMIT=0.01
         - TRANSMISSION_RATIO_LIMIT_ENABLED=true
         - TRANSMISSION_SPEED_LIMIT_UP=1
-        - TRANSMISSION_SPEED_LIMIT_UP_ENABLED=true
+        - TRANSMISSION_SPEED_LIMIT_UP_ENABLED=false
+        - TRANSMISSION_PEER_PORT=${TRANSMISSION_PEER_PORT}
       sysctls:
         - net.ipv6.conf.all.disable_ipv6=0
 
@@ -1252,11 +1271,211 @@ SmartThings was a pain to setup. Samsung created a very half-assed walled garden
         - "5299:5299"
       restart: unless-stopped
 
+## Ombi
+
+    ombi:
+      container_name: ombi
+      restart: always
+      image: linuxserver/ombi:latest
+      volumes:
+        - ${USERDIR}/ombi:/config
+      ports:
+        - "3579:3579"
+      environment:
+        - PUID=${PUID}
+        - PGID=${PGID}
+        - TZ=${TZ}
+
+## Rhasspy
+
+[Rhasspy](https://rhasspy.readthedocs.io/en/latest/) allows us to set up something akin to an Amazon Echo or Google Home, except the data never leaves your home network and it integrates with Home Assistant easily. It has wakeword detection (instead of saying "OK, Google" or "Alexa"), with quite a few different wakeword engines available. Some work better than others. I use Snowboy - it allows custom wakewords and it works pretty well. After wakeword detection, we have speech-to-text - this is where the command you issue ("turn off the office lights") gets processed into text, then text-to-speech - so I can ask what the time is, or the temperature, or the forecast, etc., and have it spoken to me. Rhasspy has a few different text-to-speech options, and I chose to use MaryTTS running in a different container. It's a little less robotic sounding.
+
+Rhasspy can be used in a client/server situation - I have a Raspberry Pi with a Resepaker microphone array hat running Rhasspy, and that communicates back to my server which handles processing the commands. Right now I think you can have a maximum of one client I believe, but that should be changing soon. The documentation available [here](https://rhasspy.readthedocs.io/en/latest/) is can walk you through the set up for most of it, but there are a few gotchas I encountered.
+
+Pull the container:
+
+    rhasspy:
+      container_name: rhasspy
+      image: synesthesiam/rhasspy-server:latest
+      volumes:
+        - ${USERDIR}/rhasspy/profiles:/profiles
+      devices:
+        - /dev/snd:/dev/snd
+      ports:
+        - "12101:12101"
+      command: --profile en --user-profiles /profiles
+
+Once it's up (and you've followed the official docs for setting up the client/server situation), to get Home Assistant to recognize commands, here's  an example of part of my set up:
+
+Rhasspy server slots:
+
+    {
+      "lights": [
+          "kitchen sink light",
+          "dining room lights",
+          "office lights",
+          "living room lights",
+          "bedroom lights",
+          "kitchen lights"
+      ]
+    }
+
+Rhasspy server sentences:
+
+    [GetTime]
+    what time is it
+    tell me the time
+
+    [GetTemperature]
+    whats the temperature
+    how (hot | cold) is it
+
+    [ChangeLightState]
+    state = (on | off) {light_state}
+    light_name = (office lights):switch.office_lights
+    turn [the] ($lights) {light_name} <state>
+
+Home Assistant configuration.yaml:
+
+    tts:
+      - platform: marytts
+        host: !secret mary_tts_url
+        port: 59125
+        codec: 'wav'
+        voice: 'cmu-slt-hsmm'
+        language: 'en-US'
+
+    rest_command:
+      marytts:
+        url: !secret rhasppy_client_url
+        method: POST
+        headers:
+          content_type: text/plain
+        payload: '{{ message }}'
+
+Home Assistant scripts.yaml:
+
+    rhasspy_light_state:
+      alias: change_light_state
+      fields:
+        light_name:
+          description: "Light Entity"
+          example: light.bulb_1
+        light_state:
+          description: "State to change the light to"
+          example: on
+      sequence:
+        - service_template: >
+            {% set this_state = light_state | string %}
+            {% if this_state == 'on' %}
+              homeassistant.turn_on
+            {%else %}
+              homeassistant.turn_off
+            {% endif %}
+          data_template:
+            entity_id: '{{ light_name | replace(" ", "_") }}'
+  
+Home Assistant automations.yaml:
+
+    - alias: Toggle lights by voice
+      trigger:
+        - event_data: {}
+          event_type: rhasspy_ChangeLightState
+          platform: event
+      condition: []
+      action:
+        - alias: ''
+          data_template:
+            light_name: "group.{{ trigger.event.data.light_name }}"
+            light_state: "{{ trigger.event.data.light_state }}"
+          service: script.rhasspy_light_state   
+
+    - alias: Say the time
+      trigger:
+        platform: event
+        event_type: rhasspy_GetTime
+      action:
+        service: rest_command.marytts
+        data_template:
+          message: "It is {{ now().strftime('%I') | int }} {{ now().strftime('%M %p') }}."
+
+    - alias: Say the temperature
+      trigger:
+        platform: event
+        event_type: rhasspy_GetTemperature
+      action:
+        service: rest_command.marytts
+        data_template:
+          message: "It is {{ states('sensor.dark_sky_temperature') }} degrees."
+
+## MaryTTS
+
+MaryTTS is a text-to-speech engine, so we can have Home Assistant speak responses back to us.
+
+    marytts:
+      container_name: marytts
+      image: synesthesiam/marytts:5.2
+      restart: unless-stopped
+      ports:
+        - "59125:59125"
+
+## Monica
+
+    monicahq:
+      container_name: monica
+      image: monicahq/monicahq
+      depends_on:
+        - mariadb
+      ports:
+        - "9521:80"
+      volumes:
+        - ${USERDIR}/monica:/var/www/monica/storage
+      restart: always
+      environment:
+        - DB_CONNECTION=mysql
+        - DB_HOST=mariadb
+        - DB_PORT=${MARIA_DB_PORT}
+        - DB_DATABASE=${MONICA_DATABASE}
+        - DB_USERNAME=${MONICA_DATABASE_USER}
+        - DB_PASSWORD=${MONICA_DB_PASSWORD}
+        - APP_KEY=${MONICA_APP_KEY}
+        - APP_LOG_LEVEL=debug
+        - APP_ENV=local
+
+## Firefly iii
+
+    firefly_iii: 
+      container_name: firefly_iii
+      image: jc5x/firefly-iii:latest
+      depends_on:
+        - mariadb
+      links:
+        - mariadb
+      networks: 
+        - default
+      ports: 
+        - "8675:80"
+      volumes: 
+        - ${USERDIR}/fireflyiii/storage/export:/var/www/firefly-iii/storage/export
+        - ${USERDIR}/fireflyiii/storage/upload:/var/www/firefly-iii/storage/upload
+        - ${USERDIR}/fireflyiii/storage:/var/www/firefly-iii/storage/
+      environment:
+        - TZ=${TZ}
+        - DB_CONNECTION=mysql
+        - DB_HOST=mariadb
+        - DB_PORT=${MARIA_DB_PORT}
+        - DB_DATABASE=${FIREFLY_DATABASE}
+        - DB_USERNAME=${FIREFLY_USER}
+        - DB_PASSWORD=${FIREFLY_DB_PASSWORD}
+        - APP_KEY=${FIREFLY_APP_KEY}
+        - APP_LOG_LEVEL=debug
+        - APP_ENV=local
+
 ## Next Steps
 
 I'm always playing around, adjusting things, adding new containers I think I might use, tweaking the ones I have. Some things on my list:
 
-* Set up a few more machines to act as hosts, and convert all of this to a Docker Swarm
+* Set up a few more machines to act as hosts, and convert all of this to a Docker Swarm or Kubernetes cluster
 * Cloud backup in Duplicati to Azure or AWS
 * Setup a CI/CD pipeline for my personal website from a self-hosted GitLab instance to AWS or Azure
 * Migrate OpenVPN to a container
