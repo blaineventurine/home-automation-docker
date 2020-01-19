@@ -309,3 +309,26 @@ services:
     ports:
       - 8083:8083
     restart: unless-stopped
+  
+  # mopidy:
+  #   image: wernight/mopidy
+  #   container_name: mopidy
+  #   hostname: mopidy
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #   #   - PULSE_SERVER=$(PULSE_SERVER)
+  #   #   - PULSE_COOKIE_DATA=${PULSE_COOKIE_DATA}
+  #   volumes: 
+  #     - ${MEDIA_PATH}/Music:/var/lib/mopidy/media:ro
+  #     - ${USERDIR}/mopidy/local:/var/lib/mopidy/local
+  #     - ${USERDIR}/mopidy/mopidy.conf:/var/lib/mopidy/.config/mopidy/mopidy.conf:ro
+  #   ports:
+  #     - 6600:6600
+  #     - 6680:6680
+  #   # options: 
+  #   #   # - spotify/enabled=false
+  #   # #   - gmusic/enabled=false
+  #   # #   - soundcloud/enabled=false
+  #   #   - spotify/username=blaineventurine@gmail.com
+  #   #   - spotify/password=ja9qAkMzstbthLt9pUKQF9tD93o

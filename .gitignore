@@ -22,6 +22,7 @@
 !/rhasppy/profiles/en/sentences.ini
 !/rhasspy/profiles/en/slots/*
 
+!start-containers.sh
 
 known_devices.yaml
 secrets.yaml
