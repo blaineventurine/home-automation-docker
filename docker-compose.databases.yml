@@ -1,0 +1,118 @@
+
+version: '3'
+services:
+  
+  mariadb:
+    image: mariadb:latest
+    container_name: "mariadb"
+    hostname: mariadb
+    command: --transaction-isolation=READ-COMMITTED --binlog-format=ROW
+    restart: always
+    volumes:
+      - ${USERDIR}/mariadb/config:/config
+      - ${USERDIR}/mariadb/mysql:/var/lib/mysql
+    ports:
+      - "${MARIA_DB_PORT}:${MARIA_DB_PORT}/tcp"
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      #- MYSQL_USER=${MYSQL_USER}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      #- MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    labels:
+      - traefik.enable=false
+      - com.centurylinklabs.watchtower.enable="false"
+  
+  mariadb-backup:
+    container_name: mariadb-backup
+    image: tiredofit/mariadb-backup
+    links:
+      - mariadb
+    volumes:
+      - ${BACKUP_DIR}/mariadbBackups:/backups
+    environment:
+      - DB_SERVER=mariadb
+      - DB_NAME=${MYSQL_DATABASE}
+      - DB_USER=${MYSQL_ROOT_USER}
+      - DB_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - DB_DUMP_FREQ=1440
+      - DB_DUMP_BEGIN=+0002
+      - DB_CLEANUP_TIME=8640
+      - MD5=TRUE
+      - COMPRESSION=XZ
+      - SPLIT_DB=FALSE
+    restart: always
+
+  phpmyadmin:
+    hostname: phpmyadmin
+    container_name: phpmyadmin
+    image: phpmyadmin/phpmyadmin:latest
+    restart: always
+    depends_on:
+      - "pihole"
+      - "mariadb"
+    links:
+      - mariadb:db
+    ports:
+      - 9999:80
+    environment:
+      - PMA_HOST=mariadb
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    labels:
+      - traefik.enable=false
+
+  mongo:
+    container_name: mongo
+    restart: always
+    image: mongo:latest
+    volumes:
+      - ${USERDIR}/mongo:/data/db
+      - /etc/localtime:/etc/localtime:ro
+    ports:
+      - "27017:27017"
+
+  influxdb:
+    container_name: influxdb
+    restart: always
+    image: influxdb:latest
+    volumes:
+      # files cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
+      - ${USERDIR}/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
+      - ${USERDIR}/influxdb/db:/var/lib/influxdb
+    ports:
+      - "8086:8086"
+    networks:
+      - traefik_proxy
+      - default
+    labels:
+      - "traefik.enable=false"
+
+  grafana:
+    container_name: grafana
+    restart: always
+    image: grafana/grafana:latest
+    depends_on:
+      - "influxdb"
+    ports:
+      - "3000:3000"
+    user: "472"
+    # to enable persistent storage, you might need to modify user permissions by creating this container in
+    # interactive mode and adjusting the permissions from a shell first
+    volumes:
+      - ${USERDIR}/grafana:/var/lib/grafana
+
+  chronograf:
+    container_name: chronograf
+    restart: always
+    image: chronograf:latest
+    depends_on:
+      - "influxdb"
+    volumes:
+      - ${USERDIR}/chronograf:/var/lib/chronograf
+    ports:
+      - "8888:8888"
+    environment:
+      - PGID=${PGID}
+      - PUID=${PUID}

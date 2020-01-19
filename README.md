@@ -463,7 +463,7 @@ that goes in it.
 `bantime` - how long in seconds the ban will last  
 `findtime` - the window of time retries must occur in, also in seconds. In this case 5 failed attempts within 600 seconds results in a ban for 1200 seconds.  
 
-Jails can be created in the root Fail2Ban folder all within one `jail.local` file, or under `jail.d` in individual `.conf` files. I use the second approach here. You can whitelist IPs from a jail by adding `ignoreip = ` followed by a space-separated list of IP addresses. Useful if you keep locking yourself out while testing.
+Jails can be created in the root Fail2Ban folder all within one `jail.local` file, or under `jail.d` in individual `.conf` files. I use the second approach here. You can whitelist IPs from a jail by adding `ignoreip =` followed by a space-separated list of IP addresses. Useful if you keep locking yourself out while testing.
 
 If you want to override default Fail2Ban options, create a file called `fail2ban.local` in the root Fail2Ban folder. I don't find that necessary.
 
@@ -519,7 +519,7 @@ Once Portainer is up, it's helpful to go through your existing containers and ch
 
 ## Watchtower
 
-Watchtower is great to run if you like making sure all your images are updated automatically. It will checks for updates, spin down the container, cleanup the old image, and spin up a container using the latest version. As long as your persistent data paths are set properly, you won't lose anything important when this happens, with one caveat: take care of MariaDB updates manually. You can exempt a container from Watchtower's update process by applying the label ` com.centurylinklabs.watchtower.enable="false" ` to it.
+Watchtower is great to run if you like making sure all your images are updated automatically. It will checks for updates, spin down the container, cleanup the old image, and spin up a container using the latest version. As long as your persistent data paths are set properly, you won't lose anything important when this happens, with one caveat: take care of MariaDB updates manually. You can exempt a container from Watchtower's update process by applying the label `com.centurylinklabs.watchtower.enable="false"` to it.
 
     watchtower:
       container_name: watchtower
@@ -849,6 +849,8 @@ In DD-WRT, I have
     iptables -t nat -I PREROUTING -i br0 -p udp -s <IP of PiHole host machine> --dport 53 -j ACCEPT
 
 When you get it up and running, [this](https://discourse.pi-hole.net/t/update-the-best-blocking-lists-for-the-pi-hole-dns-ad-blockers-interesting-combination/13620) is a good place to start looking for information on blocklists.
+
+You may also need to edit your `/etc/resolv.conf` file on your host machine and make sure the IP address in there points to the right place. Also, once PiHole is set up properly, you don't have access to DNS name resolution if it goes down. If you need spin down PiHole and then attempt to access a website by name (or do a `docker-compose up`), it probably won't work. Editing the `resolv.conf` file and adding an entry pointing to Google or Cloudflare's resolvers will give you DNS resolution again. Once PiHole is back up, put the IP address back to what it should be.
 
 ## Duplicati
 
@@ -1290,7 +1292,7 @@ Samba is a network file-sharing system. It has its own section because it requir
 
 [Rhasspy](https://rhasspy.readthedocs.io/en/latest/) allows us to set up something akin to an Amazon Echo or Google Home, except the data never leaves your home network and it integrates with Home Assistant easily. It has wakeword detection (instead of saying "OK, Google" or "Alexa"), with quite a few different wakeword engines available. Some work better than others. I use Snowboy - it allows custom wakewords and it works pretty well. After wakeword detection, we have speech-to-text - this is where the command you issue ("turn off the office lights") gets processed into text, then text-to-speech - so I can ask what the time is, or the temperature, or the forecast, etc., and have it spoken to me. Rhasspy has a few different text-to-speech options, and I chose to use MaryTTS running in a different container. It's a little less robotic sounding.
 
-Rhasspy can be used in a client/server situation - I have a Raspberry Pi with a Resepaker microphone array hat running Rhasspy, and that communicates back to my server which handles processing the commands. Right now I think you can have a maximum of one client I believe, but that should be changing soon. The documentation available [here](https://rhasspy.readthedocs.io/en/latest/) is can walk you through the set up for most of it, but there are a few gotchas I encountered.
+Rhasspy can be used in a client/server situation - I have a Raspberry Pi with a Respeaker microphone array hat running Rhasspy, and that communicates back to my server which handles processing the commands. Right now I think you can have a maximum of one client I believe, but that should be changing soon. The documentation available [here](https://rhasspy.readthedocs.io/en/latest/) can walk you through the set up for most of it, but there are a few gotchas I encountered.
 
 Pull the container:
 

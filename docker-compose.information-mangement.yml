@@ -1,0 +1,145 @@
+version: '3'
+services:
+
+  nextcloud:
+    container_name: nextcloud
+    restart: always
+    image: linuxserver/nextcloud:latest
+    volumes:
+      - ${USERDIR}/nextcloud/config:/config
+      # path to where nextcloud will store files
+      - ${USERDIR}/nextcloud/data:/data
+      - ${USERDIR}/shared:/shared
+    # ports:
+    #    - "9443:443"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - MYSQL_DATABASE=${NEXTCLOUD_DATABASE}
+      - MYSQL_USER=${NEXTCLOUD_DB_USER}
+      - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+    networks:
+      - traefik_proxy
+    depends_on:
+      - "pihole"
+      - "mariadb"
+    links:
+      - mariadb
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=nextcloud"
+      - "traefik.frontend.rule=Host:nextcloud.${DOMAINNAME}"
+      - "traefik.port=443"
+      - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      - com.centurylinklabs.watchtower.enable="false"
+
+  organizr:
+    container_name: organizr
+    restart: always
+    image: lsiocommunity/organizr:latest
+    volumes:
+      - ${USERDIR}/organizr:/config
+      - ${USERDIR}/shared:/shared
+    #ports:
+    #  - "XXXX:80"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=organizr"
+      - "traefik.frontend.rule=Host:organizr.${DOMAINNAME}"
+      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /organizr"
+      - "traefik.port=80"
+      - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      #- "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+
+  bookstack:
+    container_name: bookstack
+    image: solidnerd/bookstack:latest
+    depends_on:
+    - mariadb
+    environment:
+    - DB_HOST=mariadb:${MARIA_DB_PORT}
+    - DB_DATABASE=${BOOKSTACK_DATABASE}
+    - DB_USERNAME=${BOOKSTACK_DATABASE_USERNAME}
+    - DB_PASSWORD=${BOOKSTACK_DATABASE_PASSWORD}
+    volumes:
+    - ${USERDIR}/bookstack/uploads:/var/www/bookstack/public/uploads
+    - ${USERDIR}/bookstack/storage:/var/www/bookstack/public/storage
+    ports:
+    - "8581:80"
+
+  firefly_iii: 
+    container_name: firefly_iii
+    image: jc5x/firefly-iii:latest
+    depends_on:
+      - mariadb
+    links:
+      - mariadb
+    networks: 
+      - default
+    ports: 
+      - "8675:80"
+    volumes: 
+      - ${USERDIR}/fireflyiii/storage/export:/var/www/firefly-iii/storage/export
+      - ${USERDIR}/fireflyiii/storage/upload:/var/www/firefly-iii/storage/upload
+      - ${USERDIR}/fireflyiii/storage:/var/www/firefly-iii/storage/
+    environment:
+      - TZ=${TZ}
+      - DB_CONNECTION=mysql
+      - DB_HOST=mariadb
+      - DB_PORT=${MARIA_DB_PORT}
+      - DB_DATABASE=${FIREFLY_DATABASE}
+      - DB_USERNAME=${FIREFLY_USER}
+      - DB_PASSWORD=${FIREFLY_DB_PASSWORD}
+      - APP_KEY=${FIREFLY_APP_KEY}
+      - APP_LOG_LEVEL=debug
+      - APP_ENV=local
+
+  monicahq:
+    container_name: monica
+    image: monicahq/monicahq
+    depends_on:
+      - mariadb
+    ports:
+      - "9521:80"
+    volumes:
+      - ${USERDIR}/monica:/var/www/monica/storage
+    restart: always
+    environment:
+      - DB_CONNECTION=mysql
+      - DB_HOST=mariadb
+      - DB_PORT=${MARIA_DB_PORT}
+      - DB_DATABASE=${MONICA_DATABASE}
+      - DB_USERNAME=${MONICA_DATABASE_USER}
+      - DB_PASSWORD=${MONICA_DB_PASSWORD}
+      - APP_KEY=${MONICA_APP_KEY}
+      - APP_LOG_LEVEL=debug
+      - APP_ENV=local

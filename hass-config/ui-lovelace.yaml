@@ -13,6 +13,8 @@ resources:
     type: module
   - url: /local/community/mini-media-player/mini-media-player-bundle.js?v=1.5.2
     type: module
+  - url: /community/custom-header/custom-header.js
+    type: module
 
 views:
   - title: main

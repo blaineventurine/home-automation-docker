@@ -1,4 +1,4 @@
-- alias: 'Set theme at startup'
+- alias: Set theme at startup
   trigger:
     platform: homeassistant
     event: start
@@ -7,7 +7,7 @@
     data:
       name: Dark - Green
 
-- alias: 'Turn on front lights at sundown'
+- alias: Turn on front lights at sundown
   trigger:
     platform: sun
     event: sunset
@@ -22,7 +22,7 @@
     #   data:
     #     entity_id: switch.diningroomlamp
 
-- alias: 'Turn off porch light at sunrise'
+- alias: Turn off porch light at sunrise
   trigger:
     platform: sun
     event: sunrise
@@ -32,7 +32,7 @@
     data:
       entity_id: light.porch_light
 
-- alias: 'Turn off living room couch light at 1 am'
+- alias: Turn off living room couch light at 1 am
   trigger:
     platform: time
     at: "01:00:00"
@@ -42,7 +42,7 @@
       entity_id:
         - light.couch_light
 
-- alias: 'Roomba bin full'
+- alias: Roomba bin full
   trigger:
     platform: template
     value_template: "{%if is_state_attr('vacuum.roomba', 'bin_full', true) %}true{%endif%}"
@@ -51,7 +51,7 @@
     data:
       message: 'Roomba bin is full, please empty it'
 
-- alias: 'Roomba is stuck'
+- alias: Roomba is stuck
   trigger:
     platform: template
     value_template: "{%if is_state_attr('vacuum.roomba', 'status', 'Stuck') %}true{%endif%}"
@@ -174,6 +174,16 @@
     data_template:
       message: "It is {{ states('sensor.dark_sky_temperature') }} degrees."
 
+- alias: Start the Roomba
+  trigger:
+    platform: event
+    event_type: rhasspy_StartRoomba
+  action:
+    - service: vacuum.turn_on
+      data:
+       entity_id: vacuum.roomba
+
+
 # - alias: Say the forecast
 #   trigger:
 #     platform: event
@@ -181,7 +191,7 @@
 #   action:
 #     service: rest_command.marytts
 #     data_template:
-#       message: "It's currently {{states.sensor.dark_sky_summary.state}} and {{states.sensor.dark_sky_temperature.state|round}} degrees."
+#       message: "It's currently {{states ('sensor.dark_sky_summary.state') }} and {{states.sensor.dark_sky_temperature.state|round}} degrees."
 #       {% if is_state("sensor.allergy_season", "True")  %}
 #       "The pollen level for today is {{states.sensor.pollen_level.state}} or {{states.sensor.pollen_index.state}} percent."
 #       {% endif %}
@@ -189,7 +199,7 @@
 #       "The flu risk for today is {{states.sensor.cold_flu_risk.state}} or {{states.sensor.cold_flu_percentage.state}} percent."
 #       {% endif %}
 #       "Today you can expect {{states.sensor.dark_sky_hourly_summary.state}} with a high of {{states.sensor.dark_sky_daily_high_temperature.state|round|int}} and a low of {{states.sensor.dark_sky_daily_low_temperature.state|round|int}}."
-#       {% if states.sensor.dark_sky_wind_speed.state|int > 10 %}
+#       {% if states (weather.dark_sky.wind_speed') |int > 10 %}
 #       "Be advised it is windy outside."
 #       {% endif %}
   

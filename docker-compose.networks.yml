@@ -1,0 +1,11 @@
+version: '3'
+
+networks:
+  traefik_proxy:
+    external:
+      name: traefik_proxy
+  default:
+    driver: bridge
+  # pihole_unbound:
+  #   external:
+  #     name: pihole_unbound

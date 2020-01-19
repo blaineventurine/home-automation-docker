@@ -192,7 +192,14 @@ vacuum:
     password: !secret roomba_password
 
 switch:
-
+  - platform: command_line
+    switches:
+      #toggles Roku TV
+      tv_power:
+        command_on: 'curl -X POST http://10.15.22.43:8060/keypress/PowerOn'
+        command_off: 'curl -X POST http://10.15.22.43:8060/keypress/PowerOff'
+        command_state: 'curl -s GET http://10.15.22.43:8060/query/device-info | grep power-mode | sed -e "s:<power-mode>DisplayOff</power-mode>:OFF:" -e "s:<power-mode>PowerOn</power-mode>:ON:"'
+        value_template: '{{ value == "ON" }}'
 # Lovelace won't properly toggle icons for groups, this is a workaround
   - platform: template
     switches:

@@ -1,3 +1,11 @@
+# This file has been broken up into multiple smaller files, all started with a shell script.
+# To start the script, change into the directory containing it and all of the other docker-compose files
+# Type 
+#   chmod +x ./start-containters.sh
+#   ./start-containers.sh
+# to bring them all up. This will take quite a while - ~30 containers need to be pulled.
+
+
 version: '3'
 services:
 
