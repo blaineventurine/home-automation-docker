@@ -330,5 +330,4 @@ services:
   #   #   # - spotify/enabled=false
   #   # #   - gmusic/enabled=false
   #   # #   - soundcloud/enabled=false
-  #   #   - spotify/username=blaineventurine@gmail.com
-  #   #   - spotify/password=ja9qAkMzstbthLt9pUKQF9tD93o
+  

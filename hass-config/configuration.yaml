@@ -23,13 +23,23 @@ frontend:
 
 # Enables configuration UI
 config:
-
 system_health:
-
 notify:
-
 mobile_app:
+conversation:
+history:
+logbook:
+map:
+sun:
+cloud:
+stream:
+ffmpeg:
+ios:
 
+zone:
+  - name: work
+    latitude: !secret work_latitude
+    longitude: !secret work_longitude
 # Uncomment this if you are using SSL/TLS, running in Docker container, etc.
 http:
   base_url: !secret base_url
@@ -38,29 +48,6 @@ http:
 discovery:
   # ignore:
   #   - roku
-
-# Allows you to issue voice commands from the frontend in enabled browsers
-conversation:
-
-# Enables support for tracking state changes over time
-history:
-
-# View all events in a logbook
-logbook:
-
-# Enables a map showing the location of tracked devices
-map:
-
-# Track the sun
-sun:
-
-# Text to speech
-tts:
-  - platform: google_translate
-    service_name: google_say
-
-# Cloud
-cloud:
 
 mqtt:
   broker: !secret local_ip
@@ -118,10 +105,6 @@ hue:
     - host: !secret hue_bridge_ip
       allow_unreachable: true
       # allow_hue_groups: true
-
-stream:
-
-ffmpeg:
 
 camera:
   - platform: ffmpeg
@@ -183,7 +166,6 @@ tplink:
       - host: !secret dining_room_switch_ip
     strip:
       - host: !secret power_strip_ip
-
 
 vacuum:
   - platform: roomba
