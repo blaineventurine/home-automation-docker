@@ -73,6 +73,7 @@ services:
       - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
       - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
       - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+      - com.centurylinklabs.watchtower.enable="false
   
   mosquitto:
     container_name: mosquitto
