@@ -13,14 +13,16 @@ Currently, I'm running:
 * [Duplicati](#duplicati) - easiest backup solution I've found
 * [Fail2Ban](#fail2ban) - blocks IP addresses after a certain amount of failed login attempts
 * [Firefly iii](#fireflyiii) - budgeting software
+* [GitLab](#gitlab) - similar to GitHub
+* [Gitlab Runner](3gitlab-runner) - used for building projects I keep stored in GitLab
 * [Grafana](#grafana) - Grafana allows you to create data-visualization dashboards from InfluxDB data
 * [Home Assistant](#home-assistant) - an amazing home automation program, integrates with nearly everything
 * [InfluxDB](#influxdb) - Influx is the database I use to keep track of Home Assistant data, all the data from my sensors gets recorded here
 * [Jackett](#jackett) - a helpful wrapper for Radarr and Sonarr
 * [LazyLibrarian](#lazylibrarian) - ebook metadata manager
 * [Lidarr](#lidarr) - the cousin of radarr/sonarr, lidarr is for finding and downloading music
-* [MariaDB Backup](#mariadb-backup) - an automated backup for MariaDB
 * [MariaDB](#mariadb) - a drop-in replacement for MySQL, used as the DB for Nextcloud and a few other things
+* [MariaDB Backup](#mariadb-backup) - an automated backup for MariaDB
 * [MaryTTS](#marytts) - text-to-speech, works with [Rhasspy](#rhasspy) and [Home Assistant](#home-assistant) automations
 * [MongoDB](#mongodb) - a database I no longer use and will probably remove
 * [Monica](#monica) - personal CRM
@@ -30,11 +32,15 @@ Currently, I'm running:
 * [Node-RED](#node-red) - simplifies automation flows, a graphical way to build automations
 * [Ombi](#ombi) - allows Plex users to request content, centralizes media searching
 * [Organizr](#organizr) - a dashboard for primarily media containers
+* [Paperless](#paperless) - a document management system - I scan all my paperwork in, and it uses some OCR magic to tag and organize them
+* [PgAdmin](#pgadmin) - GUI for manaing PostgreSQL
 * [PHPMyAdmin](#phpmyadmin) - a frontend for MariaDB
 * [PiHole](#pihole) - network-wide ad-blocking. I have close to a million domains on my blocklist, which works out to be about 55% of queries
 * [Plex](#plex) - a media server, with apps for Roku, Android, iPhone, and more
 * [Portainer](#portainer) - an easy GUI to manage docker containers
+* [PostgreSQL](#postgresql) - GitLab's preferred database
 * [Radarr](#radarr) - an automated way to find and download movies via torrent or newsgroup
+* [Redis](#redis) - caching for NextCloud and PostgreSQL
 * [Rhasspy](#rhasspy) - a self-hosted alterative to Alexa, integrates well with Home Assistant, and all of your data stays local
 * [Sonarr](#sonarr) - like Radarr, but for TV shows - add a show to your wanted list and episodes will show up in Plex as they get downloaded
 * [Traefik](#traefik) - a reverse proxy with https thanks to Let's Encrypt
