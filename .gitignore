@@ -22,10 +22,16 @@
 !/rhasppy/profiles/en/sentences.ini
 !/rhasspy/profiles/en/slots/*
 
+!/redis/
 !/redis/redis.conf
 
 !start-containers.sh
 
+!/nextcloud/
+!/nextcloud/config/
+!/nextcloud/config/www/
+!/nextcloud/config/www/nextcloud/
+!/nextcloud/config/www/nextcloud/config/
 !/nextcloud/config/www/nextcloud/config/config.copy.php
 
 known_devices.yaml
