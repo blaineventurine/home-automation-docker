@@ -3,13 +3,13 @@
 !.gitignore
 !*.yaml
 !*.yml
-!.gitignore
 !*.md
 !*.conf
 
-!/hass-config/
-!/hass-config/www/
-!/hass-config/www/**
+
+!/home-assistant/
+!/home-assistant/www/
+!/home-assistant/www/**
 
 !/fail2ban/
 !/fail2ban/data/
@@ -22,7 +22,11 @@
 !/rhasppy/profiles/en/sentences.ini
 !/rhasspy/profiles/en/slots/*
 
+!/redis/redis.conf
+
 !start-containers.sh
+
+!/nextcloud/config/www/nextcloud/config/config.copy.php
 
 known_devices.yaml
 secrets.yaml
@@ -35,3 +39,4 @@ ip_bans.yaml
 .uuid
 
 smb.conf
+config.gateway.json

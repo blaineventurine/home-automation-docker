@@ -1,7 +1,5 @@
-
-version: '3'
+version: "3.7"
 services:
-  
   mariadb:
     image: mariadb:latest
     container_name: "mariadb"
@@ -11,6 +9,7 @@ services:
     volumes:
       - ${USERDIR}/mariadb/config:/config
       - ${USERDIR}/mariadb/mysql:/var/lib/mysql
+      - ${BACKUP_DIR}/mariadbBackups:/home
     ports:
       - "${MARIA_DB_PORT}:${MARIA_DB_PORT}/tcp"
     environment:
@@ -24,7 +23,7 @@ services:
     labels:
       - traefik.enable=false
       - com.centurylinklabs.watchtower.enable="false"
-  
+
   mariadb-backup:
     container_name: mariadb-backup
     image: tiredofit/mariadb-backup
@@ -77,6 +76,10 @@ services:
     container_name: influxdb
     restart: always
     image: influxdb:latest
+    environment:
+      - INFLUXDB_DB=${INFLUXDB_DB}
+      - INFLUXDB_ADMIN_USER=${INFLUXDB_USERNAME}
+      - INFLUXDB_ADMIN_PASSWORD=${INFLUXDB_PASSWORD}
     volumes:
       # files cannot be created by docker-compose, it'll make it as a directory instead. Make sure to touch this file first.
       - ${USERDIR}/influxdb/influxdb.conf:/etc/influxdb/influxdb.conf
@@ -88,31 +91,29 @@ services:
       - default
     labels:
       - "traefik.enable=false"
-
-  grafana:
-    container_name: grafana
-    restart: always
-    image: grafana/grafana:latest
-    depends_on:
-      - "influxdb"
-    ports:
-      - "3000:3000"
-    user: "472"
-    # to enable persistent storage, you might need to modify user permissions by creating this container in
-    # interactive mode and adjusting the permissions from a shell first
-    volumes:
-      - ${USERDIR}/grafana:/var/lib/grafana
-
-  chronograf:
-    container_name: chronograf
-    restart: always
-    image: chronograf:latest
-    depends_on:
-      - "influxdb"
-    volumes:
-      - ${USERDIR}/chronograf:/var/lib/chronograf
-    ports:
-      - "8888:8888"
-    environment:
-      - PGID=${PGID}
-      - PUID=${PUID}
+# grafana:
+#   container_name: grafana
+#   restart: always
+#   image: grafana/grafana:latest
+#   depends_on:
+#     - "influxdb"
+#   ports:
+#     - "3000:3000"
+#   user: "472"
+#   # to enable persistent storage, you might need to modify user permissions by creating this container in
+#   # interactive mode and adjusting the permissions from a shell first
+#   volumes:
+#     - ${USERDIR}/grafana:/var/lib/grafana
+# chronograf:
+#   container_name: chronograf
+#   restart: always
+#   image: chronograf:latest
+#   depends_on:
+#     - "influxdb"
+#   volumes:
+#     - ${USERDIR}/chronograf:/var/lib/chronograf
+#   ports:
+#     - "8888:8888"
+#   environment:
+#     - PGID=${PGID}
+#     - PUID=${PUID}

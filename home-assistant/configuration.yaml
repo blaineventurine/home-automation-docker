@@ -36,6 +36,11 @@ stream:
 ffmpeg:
 ios:
 
+logger:
+  default: info
+  # logs:
+  #   homeassistant.components.smartthings: debug
+
 zone:
   - name: work
     latitude: !secret work_latitude
@@ -49,46 +54,46 @@ discovery:
   # ignore:
   #   - roku
 
-mqtt:
-  broker: !secret local_ip
-  port: 1883
-  username: !secret mqtt_username
-  password: !secret mqtt_password
-  discovery: true
-  discovery_prefix: home_assistant
+# mqtt:
+#   broker: !secret local_ip
+#   port: 1883
+#   username: !secret mqtt_username
+#   password: !secret mqtt_password
+#   discovery: true
+#   discovery_prefix: home_assistant
 
 sensor:
   - platform: moon
 
   - platform: darksky
     api_key: !secret darksky_api_key
-  #   forecast:
-  #     - 1
-  #     - 2
-  #     - 3
-  #     - 4
-  #     - 5
+    #   forecast:
+    #     - 1
+    #     - 2
+    #     - 3
+    #     - 4
+    #     - 5
     monitored_conditions:
-  #     - icon
-  #     - summary
+      #     - icon
+      #     - summary
       - humidity
       - temperature
-  #     - apparent_temperature
+      #     - apparent_temperature
       - precip_probability
-  #     - pressure
+    #     - pressure
     scan_interval:
       minutes: 5
 
   - platform: mqtt
     name: "Pi-One Temperature"
     state_topic: "pi-one/temperature"
-    unit_of_measurement: '°F'
+    unit_of_measurement: "°F"
+
     #value_template: "{{ value_json.temperature }}"
-  
   - platform: mqtt
     name: "Pi-One Humidity"
     state_topic: "pi-one/humidity"
-    unit_of_measurement: '%'
+    unit_of_measurement: "%"
     #value_template: "{{ value_json.humidity }}"
 
 nest:
@@ -120,12 +125,6 @@ camera:
   #   password: !secret camera_password
   #   ffmpeg_arguments: -s 800x450
 
-device_tracker:
-  - platform: ddwrt
-    host: !secret router_ip
-    username: !secret router_username
-    password: !secret router_password
-
 influxdb:
   host: !secret local_ip
   port: 8086
@@ -142,7 +141,7 @@ media_player:
   - platform: plex
     ip_address: !secret local_ip
     port: 32400
-  
+
 # roku:
 #   - host: !secret roku_ip
 
@@ -159,13 +158,13 @@ calendar:
       - !secret calendar_2_name
       - !secret calendar_3_name
       - !secret calendar_4_name
-    
+
 tplink:
-    switch:
-      - host: !secret window_light_switch_ip
-      - host: !secret dining_room_switch_ip
-    strip:
-      - host: !secret power_strip_ip
+  switch:
+    - host: !secret window_light_switch_ip
+    - host: !secret dining_room_switch_ip
+  strip:
+    - host: !secret power_strip_ip
 
 vacuum:
   - platform: roomba
@@ -174,76 +173,76 @@ vacuum:
     password: !secret roomba_password
 
 switch:
-  - platform: command_line
-    switches:
-      #toggles Roku TV
-      tv_power:
-        command_on: 'curl -X POST http://10.15.22.43:8060/keypress/PowerOn'
-        command_off: 'curl -X POST http://10.15.22.43:8060/keypress/PowerOff'
-        command_state: 'curl -s GET http://10.15.22.43:8060/query/device-info | grep power-mode | sed -e "s:<power-mode>DisplayOff</power-mode>:OFF:" -e "s:<power-mode>PowerOn</power-mode>:ON:"'
-        value_template: '{{ value == "ON" }}'
-# Lovelace won't properly toggle icons for groups, this is a workaround
+  # temp disabled while I work on this
+  # - platform: command_line
+  #   switches:
+  #     #toggles Roku TV
+  #     tv_power:
+  #       command_on: "curl -X POST http://10.15.22.43:8060/keypress/PowerOn"
+  #       command_off: "curl -X POST http://10.15.22.43:8060/keypress/PowerOff"
+  #       command_state: 'curl -s GET http://10.15.22.43:8060/query/device-info | grep power-mode | sed -e "s:<power-mode>DisplayOff</power-mode>:OFF:" -e "s:<power-mode>PowerOn</power-mode>:ON:"'
+  #       value_template: '{{ value == "ON" }}'
+  # Lovelace won't properly toggle icons for groups, this is a workaround
   - platform: template
     switches:
-        office_lights:
-          value_template: "{{ is_state('group.office_lights','on') }}"
-          turn_on:
-            service: homeassistant.turn_on
-            data:
-              entity_id: group.office_lights
-          turn_off:
-            service: homeassistant.turn_off
-            data:
-              entity_id: group.office_lights
-        kitchen_lights:
-          value_template: "{{ is_state('group.kitchen_lights','on') }}"
-          turn_on:
-            service: homeassistant.turn_on
-            data:
-              entity_id: group.kitchen_lights
-          turn_off:
-            service: homeassistant.turn_off
-            data:
-              entity_id: group.kitchen_lights
-        living_room_lights:
-          value_template: "{{ is_state('group.living_room_lights','on') }}"
-          turn_on:
-            service: homeassistant.turn_on
-            data:
-              entity_id: group.living_room_lights
-          turn_off:
-            service: homeassistant.turn_off
-            data:
-              entity_id: group.living_room_lights
-        dining_room_lights:
-          value_template: "{{ is_state('group.dining_room_lights','on') }}"
-          turn_on:
-            service: homeassistant.turn_on
-            data:
-              entity_id: group.dining_room_lights
-          turn_off:
-            service: homeassistant.turn_off
-            data:
-              entity_id: group.dining_room_lights
-        bedroom_lights:
-          value_template: "{{ is_state('group.bedroom_lights','on') }}"
-          turn_on:
-            service: homeassistant.turn_on
-            data:
-              entity_id: group.bedroom_lights
-          turn_off:
-            service: homeassistant.turn_off
-            data:
-              entity_id: group.bedroom_lights
+      office_lights:
+        value_template: "{{ is_state('group.office_lights','on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: group.office_lights
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: group.office_lights
+      kitchen_lights:
+        value_template: "{{ is_state('group.kitchen_lights','on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: group.kitchen_lights
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: group.kitchen_lights
+      living_room_lights:
+        value_template: "{{ is_state('group.living_room_lights','on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: group.living_room_lights
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: group.living_room_lights
+      dining_room_lights:
+        value_template: "{{ is_state('group.dining_room_lights','on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: group.dining_room_lights
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: group.dining_room_lights
+      bedroom_lights:
+        value_template: "{{ is_state('group.bedroom_lights','on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: group.bedroom_lights
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: group.bedroom_lights
 
 tts:
   - platform: marytts
     host: !secret mary_tts_url
     port: 59125
-    codec: 'wav'
-    voice: 'cmu-slt-hsmm'
-    language: 'en-US'
-
+    codec: "wav"
+    voice: "cmu-slt-hsmm"
+    language: "en_US"
 
 rest_command:
   marytts:
@@ -251,7 +250,7 @@ rest_command:
     method: POST
     headers:
       content_type: text/plain
-    payload: '{{ message }}'
+    payload: "{{ message }}"
 
 group: !include groups.yaml
 automation: !include automations.yaml

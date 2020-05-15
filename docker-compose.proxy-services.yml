@@ -1,6 +1,5 @@
-version: '3'
+version: "3.7"
 services:
-
   fail2ban:
     container_name: fail2ban
     image: crazymax/fail2ban:latest
@@ -9,15 +8,15 @@ services:
     depends_on:
       - "pihole"
     cap_add:
-    - NET_ADMIN
-    - NET_RAW
+      - NET_ADMIN
+      - NET_RAW
     volumes:
-    - ${USERDIR}/traefik/log:/var/log:ro
-    - ${USERDIR}/fail2ban/data:/data
-
+      #this needs to read the traefik log
+      - ${USERDIR}/traefik/log:/var/log:ro
+      - ${USERDIR}/fail2ban/data:/data
   traefik:
     hostname: traefik
-    image: traefik:1.7
+    image: traefik:maroilles
     container_name: traefik
     restart: always
     volumes:
@@ -29,9 +28,9 @@ services:
       - ${USERDIR}/shared:/shared
       - ${USERDIR}/traefik/log:/var/log
     ports:
-     - "80:80"
-     - "443:443"
-     #- "8090:8080"
+      - "80:80"
+      - "443:443"
+      #- "8090:8080"
     networks:
       - default
       - traefik_proxy

@@ -1,6 +1,5 @@
-version: '3'
+version: "3.7"
 services:
-
   nextcloud:
     container_name: nextcloud
     restart: always
@@ -10,19 +9,21 @@ services:
       # path to where nextcloud will store files
       - ${USERDIR}/nextcloud/data:/data
       - ${USERDIR}/shared:/shared
-    # ports:
-    #    - "9443:443"
+    ports: #comment this out when traefik is up unless you want local networka access
+      - "9443:443"
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
       - MYSQL_DATABASE=${NEXTCLOUD_DATABASE}
       - MYSQL_USER=${NEXTCLOUD_DB_USER}
       - MYSQL_PASSWORD=${NEXTCLOUD_DB_PASSWORD}
+      - REDIS_HOST=redis
     networks:
       - traefik_proxy
     depends_on:
       - "pihole"
       - "mariadb"
+      - "redis"
     links:
       - mariadb
     labels:
@@ -84,30 +85,30 @@ services:
     container_name: bookstack
     image: solidnerd/bookstack:latest
     depends_on:
-    - mariadb
+      - mariadb
     environment:
-    - DB_HOST=mariadb:${MARIA_DB_PORT}
-    - DB_DATABASE=${BOOKSTACK_DATABASE}
-    - DB_USERNAME=${BOOKSTACK_DATABASE_USERNAME}
-    - DB_PASSWORD=${BOOKSTACK_DATABASE_PASSWORD}
+      - DB_HOST=mariadb:${MARIA_DB_PORT}
+      - DB_DATABASE=${BOOKSTACK_DATABASE}
+      - DB_USERNAME=${BOOKSTACK_DATABASE_USERNAME}
+      - DB_PASSWORD=${BOOKSTACK_DATABASE_PASSWORD}
     volumes:
-    - ${USERDIR}/bookstack/uploads:/var/www/bookstack/public/uploads
-    - ${USERDIR}/bookstack/storage:/var/www/bookstack/public/storage
+      - ${USERDIR}/bookstack/uploads:/var/www/bookstack/public/uploads
+      - ${USERDIR}/bookstack/storage:/var/www/bookstack/public/storage
     ports:
-    - "8581:80"
+      - "8581:80"
 
-  firefly_iii: 
+  firefly_iii:
     container_name: firefly_iii
     image: jc5x/firefly-iii:latest
     depends_on:
       - mariadb
     links:
       - mariadb
-    networks: 
+    networks:
       - default
-    ports: 
+    ports:
       - "8675:80"
-    volumes: 
+    volumes:
       - ${USERDIR}/fireflyiii/storage/export:/var/www/firefly-iii/storage/export
       - ${USERDIR}/fireflyiii/storage/upload:/var/www/firefly-iii/storage/upload
       - ${USERDIR}/fireflyiii/storage:/var/www/firefly-iii/storage/

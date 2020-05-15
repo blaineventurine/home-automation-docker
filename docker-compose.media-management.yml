@@ -1,6 +1,5 @@
-version: '3'
+version: "3.7"
 services:
-
   transmission-openvpn:
     image: haugene/transmission-openvpn:latest
     container_name: transmission-openvpn
@@ -58,16 +57,16 @@ services:
     container_name: sonarr
     restart: always
     networks:
-        - traefik_proxy
+      - traefik_proxy
     ports:
-        - "8989:8989"
+      - "8989:8989"
     depends_on:
       - "transmission-openvpn"
     volumes:
-        - ${USERDIR}/sonarr/config:/config
-        - ${MEDIA_PATH}/Downloads:/downloads
-        - ${MEDIA_PATH}/TV:/tv
-        - /etc/localtime:/etc/localtime:ro
+      - ${USERDIR}/sonarr/config:/config
+      - ${MEDIA_PATH}/Downloads:/downloads
+      - ${MEDIA_PATH}/TV:/tv
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -81,10 +80,10 @@ services:
     ports:
       - "7878:7878"
     volumes:
-        - ${USERDIR}/radarr/config:/config
-        - ${MEDIA_PATH}/Movies:/movies
-        - ${MEDIA_PATH}/Downloads:/downloads
-        - /etc/localtime:/etc/localtime:ro
+      - ${USERDIR}/radarr/config:/config
+      - ${MEDIA_PATH}/Movies:/movies
+      - ${MEDIA_PATH}/Downloads:/downloads
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -95,7 +94,7 @@ services:
     #     - traefik.docker.network=traefik
     #     - traefik.port=7878
     networks:
-        - traefik_proxy
+      - traefik_proxy
     # expose:
     #     - 7878
     restart: always
@@ -126,9 +125,9 @@ services:
     ports:
       - "9117:9117"
     volumes:
-        - /${USERDIR}/jackett/config:/config
-        - ${MEDIA_PATH}/Downloads:/downloads
-        - /etc/localtime:/etc/localtime:ro
+      - /${USERDIR}/jackett/config:/config
+      - ${MEDIA_PATH}/Downloads:/downloads
+      - /etc/localtime:/etc/localtime:ro
     environment:
       - PUID=${PUID}
       - PGID=${PGID}
@@ -139,58 +138,58 @@ services:
     #     - traefik.docker.network=traefik
     #     - traefik.port=9117
     networks:
-        - traefik_proxy
+      - traefik_proxy
     # expose:
     #     - 9117
     restart: always
 
-  beets:
-    image: linuxserver/beets:latest
-    container_name: beets
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - ${USERDIR}/beets/config:/config
-      - ${MEDIA_PATH}/Music:/music
-      - ${MEDIA_PATH}/Downloads:/downloads
-      - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "8337:8337"
-    restart: always
+  #   beets:
+  #     image: linuxserver/beets:latest
+  #     container_name: beets
+  #     environment:
+  #       - PUID=${PUID}
+  #       - PGID=${PGID}
+  #       - TZ=${TZ}
+  #     volumes:
+  #       - ${USERDIR}/beets/config:/config
+  #       - ${MEDIA_PATH}/Music:/music
+  #       - ${MEDIA_PATH}/Downloads:/downloads
+  #       - /etc/localtime:/etc/localtime:ro
+  #     ports:
+  #       - "8337:8337"
+  #     restart: always
 
-  ubooquity:
-    image: linuxserver/ubooquity:latest
-    container_name: ubooquity
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - ${USERDIR}/ubooquity/config:/config
-      - ${MEDIA_PATH}/Books:/books
-      - ${MEDIA_PATH}/Comics:/comics
-      # - ${MEDIA_PATH}/books:/files
-    ports:
-      - "2202:2202"
-      - "2203:2203"
-    restart: unless-stopped
+  #   ubooquity:
+  #     image: linuxserver/ubooquity:latest
+  #     container_name: ubooquity
+  #     environment:
+  #       - PUID=${PUID}
+  #       - PGID=${PGID}
+  #       - TZ=${TZ}
+  #     volumes:
+  #       - ${USERDIR}/ubooquity/config:/config
+  #       - ${MEDIA_PATH}/Books:/books
+  #       - ${MEDIA_PATH}/Comics:/comics
+  #       # - ${MEDIA_PATH}/books:/files
+  #     ports:
+  #       - "2202:2202"
+  #       - "2203:2203"
+  #     restart: unless-stopped
 
-  lazylibrarian:
-    image: linuxserver/lazylibrarian:latest
-    container_name: lazylibrarian
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - ${USERDIR}/lazyLibrarian:/config
-      - ${MEDIA_PATH}/Downloads:/downloads
-      - ${MEDIA_PATH}/books:/books
-    ports:
-      - "5299:5299"
-    restart: unless-stopped
+  #   lazylibrarian:
+  #     image: linuxserver/lazylibrarian:latest
+  #     container_name: lazylibrarian
+  #     environment:
+  #       - PUID=${PUID}
+  #       - PGID=${PGID}
+  #       - TZ=${TZ}
+  #     volumes:
+  #       - ${USERDIR}/lazyLibrarian:/config
+  #       - ${MEDIA_PATH}/Downloads:/downloads
+  #       - ${MEDIA_PATH}/books:/books
+  #     ports:
+  #       - "5299:5299"
+  #     restart: unless-stopped
 
   bazarr:
     image: linuxserver/bazarr:latest
@@ -211,24 +210,24 @@ services:
     container_name: plex
     image: linuxserver/plex:latest
     restart: unless-stopped
-    #network_mode: host
+    # network_mode: host
     ports:
       - "32400:32400/tcp"
-      - "3005:3005/tcp"
-      - "8324:8324/tcp"
-      - "32469:32469/tcp"
-      - "1900:1900/udp"
-      - "32410:32410/udp"
-      - "32412:32412/udp"
-      - "32413:32413/udp"
-      - "32414:32414/udp"
+      # - "3005:3005/tcp"
+      # - "8324:8324/tcp"
+      # - "32469:32469/tcp"
+      # - "1900:1900/udp"
+      # - "32410:32410/udp"
+      # - "32412:32412/udp"
+      # - "32413:32413/udp"
+      # - "32414:32414/udp"
     environment:
       - TZ=${TZ}
       - PUID=${PUID}
       - PGID=${PGID}
       - VERSION=docker
       - PLEX_CLAIM={PLEX_CLAIM}
-      - ADVERTISE_IP=http://{LOCAL_IP}:32400/,https://plex.${DOMAINNAME}:443
+      - ADVERTISE_IP=http://${LOCAL_IP}:32400/ #,https://plex.${DOMAINNAME}:443
       - HOSTNAME="plex"
       - ALLOWED_NETWORKS={LOCAL_NETWORK}/255.255.255.0
     volumes:
@@ -239,27 +238,27 @@ services:
       - ${MEDIA_PATH}/Music:/data/music
     networks:
       - traefik_proxy
-      - default
-    labels:
-      - "traefik.enable=true"
-      - "traefik.backend=plex"
-      - "traefik.frontend.rule=Host:plex.${DOMAINNAME}"
-      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /plex"
-      - "traefik.port=32400"
-      - "traefik.protocol=https"
-      - "traefik.docker.network=traefik_proxy"
-      - "traefik.frontend.headers.SSLRedirect=true"
-      - "traefik.frontend.headers.STSSeconds=315360000"
-      - "traefik.frontend.headers.browserXSSFilter=true"
-      - "traefik.frontend.headers.contentTypeNosniff=true"
-      - "traefik.frontend.headers.forceSTSHeader=true"
-      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
-      - "traefik.frontend.headers.STSIncludeSubdomains=true"
-      - "traefik.frontend.headers.STSPreload=true"
-      - "traefik.frontend.headers.frameDeny=true"
-      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
-      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
-      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+  #       - default
+  #     labels:
+  #       - "traefik.enable=true"
+  #       - "traefik.backend=plex"
+  #       - "traefik.frontend.rule=Host:plex.${DOMAINNAME}"
+  #       #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /plex"
+  #       - "traefik.port=32400"
+  #       - "traefik.protocol=https"
+  #       - "traefik.docker.network=traefik_proxy"
+  #       - "traefik.frontend.headers.SSLRedirect=true"
+  #       - "traefik.frontend.headers.STSSeconds=315360000"
+  #       - "traefik.frontend.headers.browserXSSFilter=true"
+  #       - "traefik.frontend.headers.contentTypeNosniff=true"
+  #       - "traefik.frontend.headers.forceSTSHeader=true"
+  #       - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+  #       - "traefik.frontend.headers.STSIncludeSubdomains=true"
+  #       - "traefik.frontend.headers.STSPreload=true"
+  #       - "traefik.frontend.headers.frameDeny=true"
+  #       - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+  #       - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+  #       - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
 
   ombi:
     container_name: ombi
@@ -273,61 +272,59 @@ services:
       - PUID=${PUID}
       - PGID=${PGID}
       - TZ=${TZ}
-    # networks:
-    #   - traefik_proxy
-    # labels:
-    #   - "traefik.enable=true"
-    #   - "traefik.backend=ombi"
-    #   - "traefik.frontend.rule=Host:ombi.${DOMAINNAME}"
-    #   #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /ombi"
-    #   - "traefik.port=3579"
-    #   - "traefik.protocol=https"
-    #   - "traefik.docker.network=traefik_proxy"
-    #   - "traefik.frontend.headers.SSLRedirect=true"
-    #   - "traefik.frontend.headers.STSSeconds=315360000"
-    #   - "traefik.frontend.headers.browserXSSFilter=true"
-    #   - "traefik.frontend.headers.contentTypeNosniff=true"
-    #   - "traefik.frontend.headers.forceSTSHeader=true"
-    #   - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
-    #   - "traefik.frontend.headers.STSIncludeSubdomains=true"
-    #   - "traefik.frontend.headers.STSPreload=true"
-    #   - "traefik.frontend.headers.frameDeny=true"
-    #   - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
-    #   - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
-    #   - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
-  
-  calibre-web:
-    image: linuxserver/calibre-web:latest
-    container_name: calibre-web
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    volumes:
-      - ${USERDIR}/calibre/config:/config
-      - ${MEDIA_PATH}/Books:/books
-    ports:
-      - 8083:8083
-    restart: unless-stopped
-  
-  # mopidy:
-  #   image: wernight/mopidy
-  #   container_name: mopidy
-  #   hostname: mopidy
-  #   environment:
-  #     - PUID=${PUID}
-  #     - PGID=${PGID}
-  #   #   - PULSE_SERVER=$(PULSE_SERVER)
-  #   #   - PULSE_COOKIE_DATA=${PULSE_COOKIE_DATA}
-  #   volumes: 
-  #     - ${MEDIA_PATH}/Music:/var/lib/mopidy/media:ro
-  #     - ${USERDIR}/mopidy/local:/var/lib/mopidy/local
-  #     - ${USERDIR}/mopidy/mopidy.conf:/var/lib/mopidy/.config/mopidy/mopidy.conf:ro
-  #   ports:
-  #     - 6600:6600
-  #     - 6680:6680
-  #   # options: 
-  #   #   # - spotify/enabled=false
-  #   # #   - gmusic/enabled=false
-  #   # #   - soundcloud/enabled=false
-  
+    networks:
+      - traefik_proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=ombi"
+      - "traefik.frontend.rule=Host:ombi.${DOMAINNAME}"
+      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /ombi"
+      - "traefik.port=3579"
+      # - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+#   calibre-web:
+#     image: linuxserver/calibre-web:latest
+#     container_name: calibre-web
+#     environment:
+#       - PUID=${PUID}
+#       - PGID=${PGID}
+#       - TZ=${TZ}
+#     volumes:
+#       - ${USERDIR}/calibre/config:/config
+#       - ${MEDIA_PATH}/Books:/books
+#     ports:
+#       - 8083:8083
+#     restart: unless-stopped
+
+# mopidy:
+#   image: wernight/mopidy
+#   container_name: mopidy
+#   hostname: mopidy
+#   environment:
+#     - PUID=${PUID}
+#     - PGID=${PGID}
+#   #   - PULSE_SERVER=$(PULSE_SERVER)
+#   #   - PULSE_COOKIE_DATA=${PULSE_COOKIE_DATA}
+#   volumes:
+#     - ${MEDIA_PATH}/Music:/var/lib/mopidy/media:ro
+#     - ${USERDIR}/mopidy/local:/var/lib/mopidy/local
+#     - ${USERDIR}/mopidy/mopidy.conf:/var/lib/mopidy/.config/mopidy/mopidy.conf:ro
+#   ports:
+#     - 6600:6600
+#     - 6680:6680
+#   # options:
+#   #   # - spotify/enabled=false
+#   # #   - gmusic/enabled=false
+#   # #   - soundcloud/enabled=false

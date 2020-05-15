@@ -1,6 +1,5 @@
-version: '3'
+version: "3.7"
 services:
-
   rhasspy:
     container_name: rhasspy
     image: synesthesiam/rhasspy-server:latest
@@ -18,19 +17,19 @@ services:
     restart: unless-stopped
     ports:
       - "59125:59125"
-  
-  nodered:
-    container_name: node-red
-    restart: always
-    image: nodered/node-red-docker:latest
-    depends_on:
-      - "homeassistant"
-    user: root
-    volumes:
-      - ${USERDIR}/node-red-1/user:/data
-      - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "1880:1880"
+
+    #   nodered:
+    #     container_name: node-red
+    #     restart: always
+    #     image: nodered/node-red-docker:latest
+    #     depends_on:
+    #       - "homeassistant"
+    #     user: root
+    #     volumes:
+    #       - ${USERDIR}/node-red-1/user:/data
+    #       - /etc/localtime:/etc/localtime:ro
+    #     ports:
+    #       - "1880:1880"
 
   homeassistant:
     container_name: home-assistant
@@ -40,9 +39,9 @@ services:
       - "influxdb"
       - "traefik"
     volumes:
-      - ${USERDIR}/hass-config:/config
+      - ${USERDIR}/home-assistant:/config
       - /etc/localtime:/etc/localtime:ro
-      - ${USERDIR}/hass_media:/media
+      - ${USERDIR}/home-assistant/media:/media
     #network_mode: host
     privileged: true
     # ports:
@@ -74,7 +73,7 @@ services:
       - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
       - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
       - com.centurylinklabs.watchtower.enable="false
-  
+
   mosquitto:
     container_name: mosquitto
     restart: always
