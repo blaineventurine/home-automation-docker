@@ -82,7 +82,7 @@ services:
     volumes:
       - ${USERDIR}/radarr/config:/config
       - ${MEDIA_PATH}/Movies:/movies
-      - ${MEDIA_PATH}/Downloads:/downloads
+      - ${MEDIA_PATH}/Downloads:/data/completed
       - /etc/localtime:/etc/localtime:ro
     environment:
       - PUID=${PUID}

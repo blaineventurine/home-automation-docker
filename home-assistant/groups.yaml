@@ -6,14 +6,12 @@ kitchen_lights:
     - light.kitchen_light_3
     - light.kitchen_light_4
     - light.kitchen_sink
-    - switch.kitchen_table_outlet
 office_lights:
   name: Office Lights
   all: false
   entities:
     - light.office_1
     - light.office_2
-    - switch.office_floor_lamp
 dining_room_lights:
   name: Dinning Room Lights
   entities:
@@ -30,6 +28,11 @@ bedroom_lights:
   entities:
     - light.beccas_nightstand
     - light.blaines_nightstand
+stairwell_lights:
+  name: Stairwell Lights
+  entities:
+    - light.kitchen_door_light
+    - light.landing_light
 all_people:
   name: All People
   entities:
@@ -40,3 +43,20 @@ office_motion_sensors:
   entities:
     - binary_sensor.desk_motion_sensor
     - binary_sensor.office_motion_sensor
+stairwell_motion_sensors:
+  name: Stairwell Motion Sensors
+  entities:
+    - binary_sensor.back_door_motion_sensor
+    - binary_sensor.landing_motion_sensor
+basement_lights:
+  name: Basement Lights
+  entities:
+    - light.basement_light_1
+    - light.basement_light_2
+    - light.basement_light_3
+    - light.basement_light_4
+basement_motion_sensors:
+  name: Basement Motion Sensors
+  entities:
+    - binary_sensor.basement_motion_sensor_1
+    - binary_sensor.basement_motion_sensor_2

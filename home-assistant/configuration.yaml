@@ -166,11 +166,11 @@ tplink:
   strip:
     - host: !secret power_strip_ip
 
-vacuum:
-  - platform: roomba
-    host: !secret roomba_ip
-    username: !secret roomba_blid
-    password: !secret roomba_password
+# vacuum:
+#   - platform: roomba
+#     host: !secret roomba_ip
+#     username: !secret roomba_blid
+#     password: !secret roomba_password
 
 switch:
   # temp disabled while I work on this
@@ -235,14 +235,34 @@ switch:
           service: homeassistant.turn_off
           data:
             entity_id: group.bedroom_lights
+      stairwell_lights:
+        value_template: "{{ is_state('group.stairwell_lights','on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: group.stairwell_lights
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: group.stairwell_lights
+      basement_lights:
+        value_template: "{{ is_state('group.basement_lights','on') }}"
+        turn_on:
+          service: homeassistant.turn_on
+          data:
+            entity_id: group.basement_lights
+        turn_off:
+          service: homeassistant.turn_off
+          data:
+            entity_id: group.basement_lights
 
-tts:
-  - platform: marytts
-    host: !secret mary_tts_url
-    port: 59125
-    codec: "wav"
-    voice: "cmu-slt-hsmm"
-    language: "en_US"
+# tts:
+#   - platform: marytts
+#     host: !secret mary_tts_url
+#     port: 59125
+#     codec: "wav"
+#     voice: "cmu-slt-hsmm"
+#     language: "en_US"
 
 rest_command:
   marytts:

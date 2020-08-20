@@ -10,6 +10,7 @@ Currently, I'm running:
 * [Beets](#beets) - to keep your music tagged properly
 * [Bookstack](#bookstack) - a self-hosted wiki. I use it to keep track of all my notes from school and work
 * [Chronograf](#chronograf) - essentially the UI to InfluxDB
+* [Docker Registry](#docker-registry) - rather than publishing my apps to Docker Hub, I run a private registry
 * [Duplicati](#duplicati) - easiest backup solution I've found
 * [Fail2Ban](#fail2ban) - blocks IP addresses after a certain amount of failed login attempts
 * [Firefly iii](#fireflyiii) - budgeting software
@@ -68,7 +69,7 @@ As far as devices, I'm using:
 * Samsung Galaxy Tab S - also a wall-mounted control panel, also has a few sensors I use
 * Roku
 * Chromecast
-* Router running [DD-WRT](https://dd-wrt.com/)
+* ~~Router running [DD-WRT](https://dd-wrt.com/)~~ upgraded to a Unifi setup
 * Nest Thermostat
 * MediaSonic NAS box - I don't use the raid features, instead I use [mergerfs](https://github.com/trapexit/mergerfs) running on my server to manage my storage situation
 * Roomba vacuum

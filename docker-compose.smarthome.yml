@@ -74,21 +74,21 @@ services:
       - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
       - com.centurylinklabs.watchtower.enable="false
 
-  mosquitto:
-    container_name: mosquitto
-    restart: always
-    image: eclipse-mosquitto:latest
-    volumes:
-      - ${USERDIR}/mosquitto/config/:/mosquitto/config/
-      - ${USERDIR}/mosquitto/log:/mosquitto/log
-      - ${USERDIR}/mosquitto/data:/mosquitto/data
-      - /etc/localtime:/etc/localtime:ro
-    environment:
-      - MOSQUITTO_USERNAME=${MOSQUITTO_USERNAME}
-      - MOSQUITTO_PASSWORD=${MOSQUITTO_PASSWORD}
-    ports:
-      - "1883:1883"
-      - "9001:9001"
-    #   - 8883:8883
-    networks:
-      - default
+  # mosquitto:
+  #   container_name: mosquitto
+  #   restart: always
+  #   image: eclipse-mosquitto:latest
+  #   volumes:
+  #     - ${USERDIR}/mosquitto/config/:/mosquitto/config/
+  #     - ${USERDIR}/mosquitto/log:/mosquitto/log
+  #     - ${USERDIR}/mosquitto/data:/mosquitto/data
+  #     - /etc/localtime:/etc/localtime:ro
+  #   environment:
+  #     - MOSQUITTO_USERNAME=${MOSQUITTO_USERNAME}
+  #     - MOSQUITTO_PASSWORD=${MOSQUITTO_PASSWORD}
+  #   ports:
+  #     - "1883:1883"
+  #     - "9001:9001"
+  #   #   - 8883:8883
+  #   networks:
+  #     - default

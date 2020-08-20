@@ -75,22 +75,22 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command: --schedule "0 0 4 * * *" --cleanup
 
-  # duplicati:
-  #   image: duplicati/duplicati:latest
-  #   container_name: duplicati
-  #   restart: always
-  #   network_mode: "bridge"
-  #   ports:
-  #     - "8200:8200"
-  #   environment:
-  #     - PUID=${PUID}
-  #     - PGID=${PGID}
-  #   volumes:
-  #     - ${USERDIR}/duplicati/config:/config
-  #     - ${USERDIR}/duplicati/data:/data/Duplicati
-  #     - ${BACKUP_DIR}/duplicatiBackups:/backups
-  #     - ${USERDIR}:/source
-  #     - /etc/localtime:/etc/localtime:ro
+  duplicati:
+    image: duplicati/duplicati:latest
+    container_name: duplicati
+    restart: always
+    network_mode: "bridge"
+    ports:
+      - "8200:8200"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+    volumes:
+      - ${USERDIR}/duplicati/config:/config
+      - ${USERDIR}/duplicati/data:/data/Duplicati
+      - ${BACKUP_DIR}/duplicatiBackups:/backups
+      - ${USERDIR}:/source
+      - /etc/localtime:/etc/localtime:ro
 
   netdata:
     image: titpetric/netdata:latest
@@ -110,30 +110,36 @@ services:
     restart: always
     image: sameersbn/gitlab:12.9.5
     ports:
-    - "10080:80"
-    - "10022:22"
+      - "10080:80"
+      - "10022:22"
     environment:
-    - DEBUG=false
-    - DB_ADAPTER=postgresql
-    - DB_HOST=postgresql
-    - DB_PORT=5432
-    - DB_USER=${POSTGRES_USER}
-    - DB_PASS=${POSTGRES_PASSWORD}
-    - DB_NAME=${POSTGRES_DB}
-    - REDIS_HOST=redis
-    - REDIS_PORT=6379
-    - TZ={TZ}
-    - GITLAB_HOST=localhost
-    - GITLAB_PORT=10080
-    - GITLAB_SSH_PORT=10022
-    - GITLAB_SECRETS_DB_KEY_BASE=${GITLAB_SECRETS_DB_KEY_BASE}
-    - GITLAB_SECRETS_SECRET_KEY_BASE=${GITLAB_SECRETS_SECRET_KEY_BASE}
-    - GITLAB_SECRETS_OTP_KEY_BASE=${GITLAB_SECRETS_OTP_KEY_BASE}
-    - GITLAB_ROOT_PASSWORD=${GITLAB_ROOT_PASSWORD}
-    - GITLAB_ROOT_EMAIL=${GITLAB_ROOT_EMAIL}
+      - DEBUG=false
+      - DB_ADAPTER=postgresql
+      - DB_HOST=postgresql
+      - DB_PORT=5432
+      - DB_USER=${POSTGRES_USER}
+      - DB_PASS=${POSTGRES_PASSWORD}
+      - DB_NAME=${POSTGRES_DB}
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - TZ={TZ}
+      - GITLAB_HOST=localhost
+      - GITLAB_PORT=10080
+      - GITLAB_SSH_PORT=10022
+      - GITLAB_SECRETS_DB_KEY_BASE=${GITLAB_SECRETS_DB_KEY_BASE}
+      - GITLAB_SECRETS_SECRET_KEY_BASE=${GITLAB_SECRETS_SECRET_KEY_BASE}
+      - GITLAB_SECRETS_OTP_KEY_BASE=${GITLAB_SECRETS_OTP_KEY_BASE}
+      - GITLAB_ROOT_PASSWORD=${GITLAB_ROOT_PASSWORD}
+      - GITLAB_ROOT_EMAIL=${GITLAB_ROOT_EMAIL}
+      - GITLAB_REGISTRY_ENABLED=true
+      - GITLAB_REGISTRY_HOST=http://${LOCAL_IP}
+      - GITLAB_REGISTRY_PORT=5000
+      - GITLAB_REGISTRY_API_URL=http://{LOCAL_IP}:5000
+      - GITLAB_REGISTRY_KEY_PATH=/certs/registry.key
     volumes:
       - ${USERDIR}/gitlab:/home/git/data
       - /etc/localtime:/etc/localtime:ro
+      - ${USERDIR}/certs:/certs
     networks:
       - default
     depends_on:
@@ -238,3 +244,50 @@ services:
       - ${MEDIA_PATH}/scannedFiles:/consume
       - ${MEDIA_PATH}/Documents/export:/export
     command: ["document_consumer"]
+
+  registry:
+    container_name: docker-registry
+    image: registry:2
+    ports:
+      - "5000:5000"
+    environment:
+      - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/data
+      - REGISTRY_REDIS_ADDR=${LOCAL_IP}:6379
+      - REGISTRY_REDIS_PASSWORD=${REDIS_PASSWORD}
+      - REGISTRY_AUTH_TOKEN_REALM=http://{$LOCAL_IP}:10800/jwt/auth
+      - REGISTRY_AUTH_TOKEN_SERVICE=${LOCAL_IP} #container_registry
+      - REGISTRY_AUTH_TOKEN_ISSUER=${LOCAL_IP} #gitlab-issuer
+      - REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/certs/registry.crt
+      - REGISTRY_STORAGE_DELETE_ENABLED=true
+    volumes:
+      - ${MEDIA_PATH}/docker-registry/data:/data
+      - ${USERDIR}/certs:/certs:ro
+    restart: always
+    links:
+      - portus
+
+    # need to figure out the secret key issue
+  portus:
+    container_name: portus
+    image: opensuse/portus:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - PORTUS_CHECK_SSL_USAGE_ENABLED='false'
+      - RAILS_SERVE_STATIC_FILES='true'
+      - PORTUS_DB_HOST=${LOCAL_IP}
+      - PORTUS_DB_USERNAME=${PORTUS_DB_USER}
+      - PORTUS_DB_PASSWORD=${PORTUS_DB_PASSWORD}
+      - PORTUS_DB_DATABASE=${PORTUS_DB}
+      - PORTUS_SECRET_KEY_BASE=${PORTUS_SECRET_KEY_BASE}
+      - PORTUS_PASSWORD=${PORTUS_PASSWORD}
+      - PORTUS_KEY_PATH=/certificates/registry.key
+    volumes:
+      - ${USERDIR}/portus:/srv/Portus/public
+      - ${USERDIR}/certs:/certificates:ro
+      # thanks to a bug, it won't initialize without this
+    entrypoint:
+      - /bin/sh
+      - /init
+    links:
+      - mariadb

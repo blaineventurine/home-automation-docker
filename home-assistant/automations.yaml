@@ -9,9 +9,10 @@
 
 - alias: Turn on front lights at sundown
   trigger:
-    platform: sun
-    event: sunset
-    offset: "-00:30:00"
+    platform: numeric_state
+    entity_id: sun.sun
+    value_template: "{{ state_attr('sun.sun', 'elevation') }}"
+    below: 3.5
   action:
     - service: light.turn_on
       data:
@@ -42,47 +43,47 @@
       entity_id:
         - light.couch_light
 
-- alias: Roomba bin full
-  trigger:
-    platform: template
-    value_template: "{%if is_state_attr('vacuum.roomba', 'bin_full', true) %}true{%endif%}"
-  action:
-  - service: notify.mobile_app_blaines_phone
-    data:
-      message: 'Roomba bin is full, please empty it'
+# - alias: Roomba bin full
+#   trigger:
+#     platform: template
+#     value_template: "{%if is_state_attr('vacuum.roomba', 'bin_full', true) %}true{%endif%}"
+#   action:
+#   - service: notify.mobile_app_blaines_phone
+#     data:
+#       message: 'Roomba bin is full, please empty it'
 
-- alias: Roomba is stuck
-  trigger:
-    platform: template
-    value_template: "{%if is_state_attr('vacuum.roomba', 'status', 'Stuck') %}true{%endif%}"
-  action:
-  - service: notify.mobile_app_blaines_phone
-    data:
-      message: 'Roomba got stuck'
+# - alias: Roomba is stuck
+#   trigger:
+#     platform: template
+#     value_template: "{%if is_state_attr('vacuum.roomba', 'status', 'Stuck') %}true{%endif%}"
+#   action:
+#   - service: notify.mobile_app_blaines_phone
+#     data:
+#       message: 'Roomba got stuck'
 
-- alias: Start Roomba while we are away
-  trigger:
-     platform: state
-     entity_id: group.all_people
-     from: 'home'
-     to: 'not_home'
-     for:
-      hours: 1
-  condition:
-    condition: and
-    conditions:      
-     - condition: time  
-       after: '10:00:00'
-       before: '18:00:00'     
-     - condition: template
-       value_template: '{{ as_timestamp(now()) - as_timestamp(states.automation.start_roomba_while_we_are_away.attributes.last_triggered) | int > 86400 }}'
-  action:
-    - service: vacuum.turn_on
-      data:
-       entity_id: vacuum.roomba
-    - service: notify.mobile_app_blaines_phone
-      data:
-        message: 'Roomba started'
+# - alias: Start Roomba while we are away
+#   trigger:
+#      platform: state
+#      entity_id: group.all_people
+#      from: 'home'
+#      to: 'not_home'
+#      for:
+#       hours: 1
+#   condition:
+#     condition: and
+#     conditions:      
+#      - condition: time  
+#        after: '10:00:00'
+#        before: '18:00:00'     
+#      - condition: template
+#        value_template: '{{ as_timestamp(now()) - as_timestamp(states.automation.start_roomba_while_we_are_away.attributes.last_triggered) | int > 86400 }}'
+#   action:
+#     - service: vacuum.turn_on
+#       data:
+#        entity_id: vacuum.roomba
+#     - service: notify.mobile_app_blaines_phone
+#       data:
+#         message: 'Roomba started'
 
 - alias: Turn heat down when away
   trigger:
@@ -104,6 +105,65 @@
         entity_id: climate.dining_room_nest
         temperature: 55
         operation_mode: Heat
+
+- alias: Turn on stairwell and basement lights when motion detected 
+  trigger:
+    platform: state
+    entity_id: group.stairwell_motion_sensors
+    to: 'on'
+  condition:
+    - condition: numeric_state
+      entity_id: sun.sun
+      value_template: "{{ state_attr('sun.sun', 'elevation') }}"
+      below: 3.5
+  action:
+    service: switch.turn_on
+    data:
+      entity_id:
+        - switch.stairwell_lights
+        - switch.basement_lights
+
+- alias: Turn on kitchen door light when door opens after sunset
+  trigger:
+    platform: state
+    entity_id: binary_sensor.kitchen_door_sensor_contact
+    to: 'on'
+  condition:
+    - condition: numeric_state
+      entity_id: sun.sun
+      value_template: "{{ state_attr('sun.sun', 'elevation') }}"
+      below: 3.5
+  action:
+    service: switch.turn_on
+    data:
+      entity_id:
+        - switch.stairwell_lights
+
+- alias: Turn off stairwell lights when no motion for 10 minutes
+  trigger:
+    platform: state
+    entity_id: group.stairwell_motion_sensors
+    to: 'off'
+    for:
+      minutes: 10
+  action:
+    service: switch.turn_off
+    data:
+      entity_id:
+        - switch.stairwell_lights
+
+- alias: Turn off basement lights when no motion for 10 minutes
+  trigger:
+    platform: state
+    entity_id: group.basement_motion_sensors
+    to: 'off'
+    for:
+      minutes: 10
+  action:
+    service: switch.turn_off
+    data:
+      entity_id:
+        - switch.basement_lights
 
 - alias: Turn off office lights if no motion detected
   trigger:
@@ -174,14 +234,14 @@
     data_template:
       message: "It is {{ states('sensor.dark_sky_temperature') }} degrees."
 
-- alias: Start the Roomba
-  trigger:
-    platform: event
-    event_type: rhasspy_StartRoomba
-  action:
-    - service: vacuum.turn_on
-      data:
-       entity_id: vacuum.roomba
+# - alias: Start the Roomba
+#   trigger:
+#     platform: event
+#     event_type: rhasspy_StartRoomba
+#   action:
+#     - service: vacuum.turn_on
+#       data:
+#        entity_id: vacuum.roomba
 
 
 # - alias: Say the forecast
