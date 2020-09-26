@@ -17,6 +17,7 @@ resources:
     type: module
 
 views:
+############## Main ###################
   - title: main
     theme: night
     icon: mdi:home-outline
@@ -107,36 +108,37 @@ views:
         entity: weather.dark_sky
         name: Weather
         icons: "/local/custom-lovelace/weather-card/icons/"
-      - type: glance
-        title: Things
-        show_state: false
-        entities:
-          - entity: vacuum.roomba
-            name: Roomba
-            hold_action:
-              action: more-info
-            show_icon: true
-            show_name: true
-            tap_action:
-              action: toggle
-            type: entity-button
-          - entity: switch.humidifier
-            name: Humidifier
-            show_icon: false
-            show_name: true
-            tap_action:
-              action: toggle
-              type: entity-button
+      # - type: glance
+      #   title: Things
+      #   show_state: false
+      #   entities:
+      #     - entity: vacuum.roomba
+      #       name: Roomba
+      #       hold_action:
+      #         action: more-info
+      #       show_icon: true
+      #       show_name: true
+      #       tap_action:
+      #         action: toggle
+      #       type: entity-button
+      #     - entity: switch.humidifier
+      #       name: Humidifier
+      #       show_icon: false
+      #       show_name: true
+      #       tap_action:
+      #         action: toggle
+      #         type: entity-button
 
+############## Temperature ###################
   - title: temperature
     icon: mdi:thermometer-lines
     cards:
       - type: thermostat
         entity: climate.dining_room_nest
-      - type: sensor
-        entity: sensor.pi_one_temperature
-        name: Bedroom Temperature
-        graph: line
+      # - type: sensor
+      #   entity: sensor.pi_one_temperature
+      #   name: Bedroom Temperature
+      #   graph: line
       - type: sensor
         entity: sensor.dark_sky_temperature
         name: Outside Temperature
@@ -153,15 +155,16 @@ views:
         entity: sensor.office_motion_sensor_temperature_measurement
         name: Office Temperature
         graph: line
-      - type: sensor
-        entity: sensor.pi_one_humidity
-        name: Bedroom Humidity
-        graph: line
+      # - type: sensor
+      #   entity: sensor.pi_one_humidity
+      #   name: Bedroom Humidity
+      #   graph: line
       - type: sensor
         entity: sensor.dining_room_thermostat_nest_humidity
         name: Dining Room Humidity
         graph: line
 
+############## Lights ###################
   - title: lights
     icon: mdi:desk-lamp
     cards:
@@ -327,6 +330,7 @@ views:
             tap_action:
               action: toggle
 
+############## Cameras ###################
   - title: Cameras
     icon: mdi:cctv
     panel: true
@@ -340,6 +344,7 @@ views:
       - type: picture-entity
         entity: camera.livingroomcamera_front
 
+############## Media ###################
   - title: Media
     icon: mdi:music-note
     cards:
@@ -351,6 +356,7 @@ views:
         client_id: !secret spotify_client_id
         limit: 50
 
+############## Calendar ###################
   - title: Calendar
     icon: mdi:calendar
     cards:
@@ -367,6 +373,7 @@ views:
           - !secret calendar_3
           - !secret calendar_4
 
+############## TV ###################
   - title: TV & Movies
     icon: mdi:television-box
     # cards:

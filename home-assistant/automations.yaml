@@ -115,7 +115,7 @@
     - condition: numeric_state
       entity_id: sun.sun
       value_template: "{{ state_attr('sun.sun', 'elevation') }}"
-      below: 3.5
+      below: 5.5
   action:
     service: switch.turn_on
     data:
@@ -132,7 +132,7 @@
     - condition: numeric_state
       entity_id: sun.sun
       value_template: "{{ state_attr('sun.sun', 'elevation') }}"
-      below: 3.5
+      below: 5.5
   action:
     service: switch.turn_on
     data:
@@ -161,6 +161,22 @@
       minutes: 10
   action:
     service: switch.turn_off
+    data:
+      entity_id:
+        - switch.basement_lights
+
+- alias: Turn on basement lights when motion detected 
+  trigger:
+    platform: state
+    entity_id: group.stairwell_motion_sensors
+    to: 'on'
+  condition:
+    - condition: numeric_state
+      entity_id: sun.sun
+      value_template: "{{ state_attr('sun.sun', 'elevation') }}"
+      below: 6.5
+  action:
+    service: switch.turn_on
     data:
       entity_id:
         - switch.basement_lights
