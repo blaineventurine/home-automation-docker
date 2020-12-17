@@ -1,35 +1,35 @@
 version: "3.7"
 services:
-  rhasspy:
-    container_name: rhasspy
-    image: synesthesiam/rhasspy-server:latest
-    volumes:
-      - ${USERDIR}/rhasspy/profiles:/profiles
-    devices:
-      - /dev/snd:/dev/snd
-    ports:
-      - "12101:12101"
-    command: --profile en --user-profiles /profiles
+  # rhasspy:
+  #   container_name: rhasspy
+  #   image: synesthesiam/rhasspy-server:latest
+  #   volumes:
+  #     - ${USERDIR}/rhasspy/profiles:/profiles
+  #   devices:
+  #     - /dev/snd:/dev/snd
+  #   ports:
+  #     - "12101:12101"
+  #   command: --profile en --user-profiles /profiles
 
-  marytts:
-    container_name: marytts
-    image: synesthesiam/marytts:5.2
-    restart: unless-stopped
-    ports:
-      - "59125:59125"
+  # marytts:
+  #   container_name: marytts
+  #   image: synesthesiam/marytts:5.2
+  #   restart: unless-stopped
+  #   ports:
+  #     - "59125:59125"
 
-    #   nodered:
-    #     container_name: node-red
-    #     restart: always
-    #     image: nodered/node-red-docker:latest
-    #     depends_on:
-    #       - "homeassistant"
-    #     user: root
-    #     volumes:
-    #       - ${USERDIR}/node-red-1/user:/data
-    #       - /etc/localtime:/etc/localtime:ro
-    #     ports:
-    #       - "1880:1880"
+  #   nodered:
+  #     container_name: node-red
+  #     restart: always
+  #     image: nodered/node-red-docker:latest
+  #     depends_on:
+  #       - "homeassistant"
+  #     user: root
+  #     volumes:
+  #       - ${USERDIR}/node-red-1/user:/data
+  #       - /etc/localtime:/etc/localtime:ro
+  #     ports:
+  #       - "1880:1880"
 
   homeassistant:
     container_name: home-assistant
@@ -65,7 +65,7 @@ services:
       - "traefik.frontend.headers.browserXSSFilter=true"
       - "traefik.frontend.headers.contentTypeNosniff=true"
       - "traefik.frontend.headers.forceSTSHeader=true"
-      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}"
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"
@@ -73,7 +73,6 @@ services:
       - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
       - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
       - com.centurylinklabs.watchtower.enable="false
-
   # mosquitto:
   #   container_name: mosquitto
   #   restart: always

@@ -53,7 +53,7 @@ services:
       - "traefik.frontend.headers.browserXSSFilter=true"
       - "traefik.frontend.headers.contentTypeNosniff=true"
       - "traefik.frontend.headers.forceSTSHeader=true"
-      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}"
       - "traefik.frontend.headers.STSIncludeSubdomains=true"
       - "traefik.frontend.headers.STSPreload=true"
       - "traefik.frontend.headers.frameDeny=true"

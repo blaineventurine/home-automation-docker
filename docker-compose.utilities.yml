@@ -40,7 +40,7 @@ services:
   portainer:
     container_name: portainer
     restart: always
-    image: portainer/portainer:latest
+    image: portainer/portainer-ce:latest
     volumes:
       - ${USERDIR}/portainer:/data
       - /var/run/docker.sock:/var/run/docker.sock
@@ -49,20 +49,20 @@ services:
     environment:
       - TZ=${TZ}
 
-  ipam:
-    container_name: ipam
-    depends_on:
-      - mariadb
-    image: pierrecdn/phpipam:latest
-    volumes:
-      - ${USERDIR}/phpipam:/var/www/
-    environment:
-      - MYSQL_ENV_MYSQL_USER=${MYSQL_ROOT_USER}
-      - MYSQL_ENV_MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_ENV_MYSQL_HOST=mariadb
-      - MYSQL_ENV_MYSQL_DB=${PHPIPAM_DATABASE}
-    ports:
-      - "3280:80"
+  # ipam:
+  #   container_name: ipam
+  #   depends_on:
+  #     - mariadb
+  #   image: pierrecdn/phpipam:latest
+  #   volumes:
+  #     - ${USERDIR}/phpipam:/var/www/
+  #   environment:
+  #     - MYSQL_ENV_MYSQL_USER=${MYSQL_ROOT_USER}
+  #     - MYSQL_ENV_MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+  #     - MYSQL_ENV_MYSQL_HOST=mariadb
+  #     - MYSQL_ENV_MYSQL_DB=${PHPIPAM_DATABASE}
+  #   ports:
+  #     - "3280:80"
 
   watchtower:
     container_name: watchtower
@@ -108,23 +108,26 @@ services:
   gitlab:
     container_name: gitlab
     restart: always
-    image: sameersbn/gitlab:12.9.5
+    image: sameersbn/gitlab:latest
     ports:
       - "10080:80"
+      - "10443:443"
       - "10022:22"
     environment:
-      - DEBUG=false
+      - DEBUG=true
       - DB_ADAPTER=postgresql
       - DB_HOST=postgresql
       - DB_PORT=5432
       - DB_USER=${POSTGRES_USER}
       - DB_PASS=${POSTGRES_PASSWORD}
-      - DB_NAME=${POSTGRES_DB}
+      - DB_NAME=${GITLAB_POSTGRES_DB}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - TZ={TZ}
-      - GITLAB_HOST=localhost
-      - GITLAB_PORT=10080
+      - GITLAB_SIGNUP_ENABLED=false
+      - GITLAB_HOST=${GITLAB_HOSTNAME}
+      - GITLAB_HTTPS=false
+      - GITLAB_PORT=80
       - GITLAB_SSH_PORT=10022
       - GITLAB_SECRETS_DB_KEY_BASE=${GITLAB_SECRETS_DB_KEY_BASE}
       - GITLAB_SECRETS_SECRET_KEY_BASE=${GITLAB_SECRETS_SECRET_KEY_BASE}
@@ -132,30 +135,63 @@ services:
       - GITLAB_ROOT_PASSWORD=${GITLAB_ROOT_PASSWORD}
       - GITLAB_ROOT_EMAIL=${GITLAB_ROOT_EMAIL}
       - GITLAB_REGISTRY_ENABLED=true
-      - GITLAB_REGISTRY_HOST=http://${LOCAL_IP}
+      # - GITLAB_REGISTRY_HOST=registry.${DOMAINNAME}
+      - GITLAB_REGISTRY_HOST=http://${LOCAL_IP}:5000
       - GITLAB_REGISTRY_PORT=5000
-      - GITLAB_REGISTRY_API_URL=http://{LOCAL_IP}:5000
+      - GITLAB_REGISTRY_API_URL=http://${LOCAL_IP}:5000
+      # - GITLAB_REGISTRY_API_URL=https://registry.${DOMAINNAME}:5000
       - GITLAB_REGISTRY_KEY_PATH=/certs/registry.key
-    volumes:
-      - ${USERDIR}/gitlab:/home/git/data
-      - /etc/localtime:/etc/localtime:ro
-      - ${USERDIR}/certs:/certs
+      # - GITLAB_REGISTRY_GENERATE_INTERNAL_CERTIFICATES=true
+      # - GITLAB_REGISTRY_ISSUER=gitlab-issuer
+      # - SSL_REGISTRY_KEY_PATH=/certs/registry.key
+      # - SSL_REGISTRY_CERT_PATH=/certs/registry.crt
+      # - REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/certs/registry.crt
     networks:
+      - traefik_proxy
       - default
+    volumes:
+      # - ${MEDIA_PATH}/gitlab/config:/etc/gitlab
+      # - ${MEDIA_PATH}/gitlab/logs:/var/log/gitlab
+      # - ${MEDIA_PATH}/gitlab/data:/var/opt/gitlab
+      - ${MEDIA_PATH}/gitlab:/home/git/data
+      - ${USERDIR}/certs:/certs
     depends_on:
       - redis
       - postgresql
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=gitlab"
+      - "traefik.frontend.rule=Host:gitlab.${DOMAINNAME}"
+      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /plex"
+      - "traefik.port=80"
+      # - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+      - com.centurylinklabs.watchtower.enable="false" 
 
+# might need to do this to register:
+# docker run --rm -it -v ${USERDIR}/gitlab/runners/1:/etc/gitlab-runner gitlab/gitlab-runner register 
   gitlab-runner:
     container_name: gitlab-runner
     image: gitlab/gitlab-runner:latest
     environment:
-      - CI_SERVER_URL=http://${LOCAL_IP}:10800 # https://${GITLAB_HOSTNAME}/
+      - CI_SERVER_URL=https://${GITLAB_HOSTNAME}/
       - RUNNER_TOKEN=${GITLAB_RUNNER_ONE_TOKEN}
-      - RUNNER_DESCRIPTION=runner-1
-      - RUNNER_EXECUTOR=shell
+      - RUNNER_DESCRIPTION=runner-one
+      - RUNNER_EXECUTOR=docker
     volumes:
-      - ${USERDIR}/gitlab/runners/1:/etc/gitlab-runner
+      - ${MEDIA_PATH}/gitlab/runners/1:/etc/gitlab-runner
       - /var/run/docker.sock:/var/run/docker.sock
     restart: always
     networks:
@@ -186,10 +222,10 @@ services:
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_DB=${GITLAB_POSTGRES_DB}
       - DB_EXTENSION=pg_trgm
     volumes:
-      - ${USERDIR}/postgres:/var/lib/postgresql/data
+      - ${USERDIR}/postgresData:/var/lib/postgresql/data
       #- ${USERDIR}/postgres:/data/postgres
     ports:
       - "5432:5432"
@@ -246,27 +282,53 @@ services:
     command: ["document_consumer"]
 
   registry:
-    container_name: docker-registry
-    image: registry:2
+    container_name: registry
+    image: registry:latest
+    restart: always
     ports:
       - "5000:5000"
     environment:
-      - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/data
+      - REGISTRY_LOG_LEVEL=debug
+      - REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY=/registry
       - REGISTRY_REDIS_ADDR=${LOCAL_IP}:6379
       - REGISTRY_REDIS_PASSWORD=${REDIS_PASSWORD}
-      - REGISTRY_AUTH_TOKEN_REALM=http://{$LOCAL_IP}:10800/jwt/auth
-      - REGISTRY_AUTH_TOKEN_SERVICE=${LOCAL_IP} #container_registry
-      - REGISTRY_AUTH_TOKEN_ISSUER=${LOCAL_IP} #gitlab-issuer
+      - REGISTRY_AUTH_TOKEN_REALM=https://${GITLAB_HOSTNAME}/jwt/auth
+      - REGISTRY_AUTH_TOKEN_SERVICE=container_registry
+      - REGISTRY_AUTH_TOKEN_ISSUER=gitlab-issuer
       - REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/certs/registry.crt
       - REGISTRY_STORAGE_DELETE_ENABLED=true
     volumes:
-      - ${MEDIA_PATH}/docker-registry/data:/data
+      - ${MEDIA_PATH}/docker-registry:/registry
       - ${USERDIR}/certs:/certs:ro
-    restart: always
+  #   restart: always
     links:
       - portus
+      - gitlab
+    labels:
+      - "traefik.enable=true"
+      - "traefik.backend=registry"
+      - "traefik.frontend.rule=Host:registry.${DOMAINNAME}"
+      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /plex"
+      - "traefik.port=5000"
+      # - "traefik.protocol=https"
+      - "traefik.docker.network=traefik_proxy"
+      - "traefik.frontend.headers.SSLRedirect=true"
+      - "traefik.frontend.headers.STSSeconds=315360000"
+      - "traefik.frontend.headers.browserXSSFilter=true"
+      - "traefik.frontend.headers.contentTypeNosniff=true"
+      - "traefik.frontend.headers.forceSTSHeader=true"
+      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}"
+      - "traefik.frontend.headers.STSIncludeSubdomains=true"
+      - "traefik.frontend.headers.STSPreload=true"
+      - "traefik.frontend.headers.frameDeny=true"
+      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+      - com.centurylinklabs.watchtower.enable="false" 
+    networks:
+      - default
+      - traefik_proxy
 
-    # need to figure out the secret key issue
   portus:
     container_name: portus
     image: opensuse/portus:latest

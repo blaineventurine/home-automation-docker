@@ -62,15 +62,15 @@ services:
     labels:
       - traefik.enable=false
 
-  mongo:
-    container_name: mongo
-    restart: always
-    image: mongo:latest
-    volumes:
-      - ${USERDIR}/mongo:/data/db
-      - /etc/localtime:/etc/localtime:ro
-    ports:
-      - "27017:27017"
+  # mongo:
+  #   container_name: mongo
+  #   restart: always
+  #   image: mongo:latest
+  #   volumes:
+  #     - ${USERDIR}/mongo:/data/db
+  #     - /etc/localtime:/etc/localtime:ro
+  #   ports:
+  #     - "27017:27017"
 
   influxdb:
     container_name: influxdb

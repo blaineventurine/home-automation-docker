@@ -259,41 +259,40 @@ services:
   #       - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
   #       - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
   #       - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
-
-  ombi:
-    container_name: ombi
-    restart: always
-    image: linuxserver/ombi:latest
-    volumes:
-      - ${USERDIR}/ombi:/config
-    ports:
-      - "3579:3579"
-    environment:
-      - PUID=${PUID}
-      - PGID=${PGID}
-      - TZ=${TZ}
-    networks:
-      - traefik_proxy
-    labels:
-      - "traefik.enable=true"
-      - "traefik.backend=ombi"
-      - "traefik.frontend.rule=Host:ombi.${DOMAINNAME}"
-      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /ombi"
-      - "traefik.port=3579"
-      # - "traefik.protocol=https"
-      - "traefik.docker.network=traefik_proxy"
-      - "traefik.frontend.headers.SSLRedirect=true"
-      - "traefik.frontend.headers.STSSeconds=315360000"
-      - "traefik.frontend.headers.browserXSSFilter=true"
-      - "traefik.frontend.headers.contentTypeNosniff=true"
-      - "traefik.frontend.headers.forceSTSHeader=true"
-      - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
-      - "traefik.frontend.headers.STSIncludeSubdomains=true"
-      - "traefik.frontend.headers.STSPreload=true"
-      - "traefik.frontend.headers.frameDeny=true"
-      - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
-      - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
-      - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
+  # ombi:
+  #   container_name: ombi
+  #   restart: always
+  #   image: linuxserver/ombi:latest
+  #   volumes:
+  #     - ${USERDIR}/ombi:/config
+  #   ports:
+  #     - "3579:3579"
+  #   environment:
+  #     - PUID=${PUID}
+  #     - PGID=${PGID}
+  #     - TZ=${TZ}
+  #   networks:
+  #     - traefik_proxy
+  #   labels:
+  #     - "traefik.enable=true"
+  #     - "traefik.backend=ombi"
+  #     - "traefik.frontend.rule=Host:ombi.${DOMAINNAME}"
+  #     #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /ombi"
+  #     - "traefik.port=3579"
+  #     # - "traefik.protocol=https"
+  #     - "traefik.docker.network=traefik_proxy"
+  #     - "traefik.frontend.headers.SSLRedirect=true"
+  #     - "traefik.frontend.headers.STSSeconds=315360000"
+  #     - "traefik.frontend.headers.browserXSSFilter=true"
+  #     - "traefik.frontend.headers.contentTypeNosniff=true"
+  #     - "traefik.frontend.headers.forceSTSHeader=true"
+  #     - "traefik.frontend.headers.SSLHost=${DOMAINNAME}.com"
+  #     - "traefik.frontend.headers.STSIncludeSubdomains=true"
+  #     - "traefik.frontend.headers.STSPreload=true"
+  #     - "traefik.frontend.headers.frameDeny=true"
+  #     - "traefik.frontend.headers.customFrameOptionsValue=SAMEORIGIN"
+  #     - "traefik.frontend.headers.contentSecurityPolicy=upgrade-insecure-requests"
+  #     - "traefik.frontend.headers.customResponseHeaders=X-Robots-Tag:noindex,nofollow,nosnippet,noarchive,notranslate,noimageindex"
 #   calibre-web:
 #     image: linuxserver/calibre-web:latest
 #     container_name: calibre-web
