@@ -340,3 +340,37 @@ services:
       - /init
     links:
       - mariadb
+
+
+  postgresql-sq:
+    image: postgres:latest
+    container_name: postgresql-sq
+    environment:
+      - POSTGRES_USER=${SQ_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${SQ_POSTGRES_PASSWORD}
+      - POSTGRES_DB=${SQ_POSTGRES_DB}
+      - DB_EXTENSION=pg_trgm
+    volumes:
+      - ${USERDIR}/postgresData-sq:/var/lib/postgresql/data
+      #- ${USERDIR}/postgres:/data/postgres
+    ports:
+      - "5433:5432"
+    networks:
+      - default
+    restart: unless-stopped
+  
+  sonarqube:
+    image: sonarqube:latest
+    container_name: sonarqube
+    hostname: sonarqube
+    ports:
+      - 9500:9000
+    environment:
+      - sonar.jdbc.username=${SQ_POSTGRES_USER}
+      - sonar.jdbc.password=${SQ_POSTGRES_PASSWORD}
+      - sonar.jdbc.url=jdbc:postgresql://${LOCAL_IP}:5433/${SQ_POSTGRES_DB}
+      - sonar.search.javaAdditionalOpts=-Dbootstrap.system_call_filter=false
+    volumes:
+      - ${USERDIR}/sonarQube/logs:/opt/sonarqube/logs
+      - ${USERDIR}/sonarQube/data:/opt/sonarqube/data
+      - ${USERDIR}/sonarQube/extensions:/opt/sonarqube/extensions
