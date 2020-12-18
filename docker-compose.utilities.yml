@@ -135,24 +135,13 @@ services:
       - GITLAB_ROOT_PASSWORD=${GITLAB_ROOT_PASSWORD}
       - GITLAB_ROOT_EMAIL=${GITLAB_ROOT_EMAIL}
       - GITLAB_REGISTRY_ENABLED=true
-      # - GITLAB_REGISTRY_HOST=registry.${DOMAINNAME}
-      - GITLAB_REGISTRY_HOST=http://${LOCAL_IP}:5000
-      - GITLAB_REGISTRY_PORT=5000
-      - GITLAB_REGISTRY_API_URL=http://${LOCAL_IP}:5000
-      # - GITLAB_REGISTRY_API_URL=https://registry.${DOMAINNAME}:5000
+      - GITLAB_REGISTRY_HOST=registry.${DOMAINNAME}
+      - GITLAB_REGISTRY_API_URL=https://registry.${DOMAINNAME}
       - GITLAB_REGISTRY_KEY_PATH=/certs/registry.key
-      # - GITLAB_REGISTRY_GENERATE_INTERNAL_CERTIFICATES=true
-      # - GITLAB_REGISTRY_ISSUER=gitlab-issuer
-      # - SSL_REGISTRY_KEY_PATH=/certs/registry.key
-      # - SSL_REGISTRY_CERT_PATH=/certs/registry.crt
-      # - REGISTRY_AUTH_TOKEN_ROOTCERTBUNDLE=/certs/registry.crt
     networks:
       - traefik_proxy
       - default
     volumes:
-      # - ${MEDIA_PATH}/gitlab/config:/etc/gitlab
-      # - ${MEDIA_PATH}/gitlab/logs:/var/log/gitlab
-      # - ${MEDIA_PATH}/gitlab/data:/var/opt/gitlab
       - ${MEDIA_PATH}/gitlab:/home/git/data
       - ${USERDIR}/certs:/certs
     depends_on:
@@ -162,7 +151,6 @@ services:
       - "traefik.enable=true"
       - "traefik.backend=gitlab"
       - "traefik.frontend.rule=Host:gitlab.${DOMAINNAME}"
-      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /plex"
       - "traefik.port=80"
       # - "traefik.protocol=https"
       - "traefik.docker.network=traefik_proxy"
@@ -308,7 +296,6 @@ services:
       - "traefik.enable=true"
       - "traefik.backend=registry"
       - "traefik.frontend.rule=Host:registry.${DOMAINNAME}"
-      #- "traefik.frontend.rule=Host:${DOMAINNAME}; PathPrefixStrip: /plex"
       - "traefik.port=5000"
       # - "traefik.protocol=https"
       - "traefik.docker.network=traefik_proxy"
